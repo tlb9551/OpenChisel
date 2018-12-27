@@ -23,6 +23,7 @@ add_library(${PROJECT_NAME}
     src/geometry/Frustum.cpp
     src/camera/Intrinsics.cpp
     src/camera/PinholeCamera.cpp
+    src/camera/GeneralCamera.cpp
     src/pointcloud/PointCloud.cpp
     src/ProjectionIntegrator.cpp
     src/Chisel.cpp

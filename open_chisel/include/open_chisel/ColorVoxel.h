@@ -62,6 +62,28 @@ namespace chisel
                 weight = value;
             }
 
+            // inline void Integrate(const uint8_t& newRed, const uint8_t& newGreen, const uint8_t& newBlue, const uint8_t& weightUpdate)
+            // {
+            //     if(weight >= std::numeric_limits<uint8_t>::max() - weightUpdate)
+            //     {
+            //         return;
+            //     }
+
+            //     float oldRed = static_cast<float>(GetRed());
+            //     float updatedRed = Saturate(static_cast<float>(weight * oldRed + weightUpdate * newRed) / (weightUpdate + weight));
+            //     red = static_cast<uint8_t>(updatedRed);
+
+            //     float oldGreen = static_cast<float>(GetGreen());
+            //     float updatedGreen = Saturate(static_cast<float>(weight * oldGreen + weightUpdate * newGreen) / (weightUpdate + weight));
+            //     green = static_cast<uint8_t>(updatedGreen);
+
+            //     float oldBlue = static_cast<float>(GetBlue());
+            //     float updatedBlue = Saturate(static_cast<float>(weight * oldBlue + weightUpdate * newBlue) / (weightUpdate + weight));
+            //     blue = static_cast<uint8_t>(updatedBlue);
+
+            //     SetWeight(weight + weightUpdate);
+            // }
+
             inline void Integrate(const uint8_t& newRed, const uint8_t& newGreen, const uint8_t& newBlue, const uint8_t& weightUpdate)
             {
                 if(weight >= std::numeric_limits<uint8_t>::max() - weightUpdate)
@@ -70,20 +92,19 @@ namespace chisel
                 }
 
                 float oldRed = static_cast<float>(GetRed());
-                float updatedRed = Saturate(static_cast<float>(weight * oldRed + weightUpdate * newRed) / (weightUpdate + weight));
+                float updatedRed = Saturate(static_cast<float>(newRed));
                 red = static_cast<uint8_t>(updatedRed);
 
                 float oldGreen = static_cast<float>(GetGreen());
-                float updatedGreen = Saturate(static_cast<float>(weight * oldGreen + weightUpdate * newGreen) / (weightUpdate + weight));
+                float updatedGreen = Saturate(static_cast<float>(newGreen));
                 green = static_cast<uint8_t>(updatedGreen);
 
                 float oldBlue = static_cast<float>(GetBlue());
-                float updatedBlue = Saturate(static_cast<float>(weight * oldBlue + weightUpdate * newBlue) / (weightUpdate + weight));
+                float updatedBlue = Saturate(static_cast<float>(newBlue));
                 blue = static_cast<uint8_t>(updatedBlue);
 
-                SetWeight(weight + weightUpdate);
+                SetWeight(weightUpdate);
             }
-
             inline void Reset()
             {
                 red = 0;

@@ -41,7 +41,21 @@ namespace chisel
             bool Contains(const Vec3& point) const;
             void ComputeBoundingBox(AABB* box) const;
             void SetFromParams(const Transform& view, float near, float far, float fx, float fy, float cx, float cy, float imgWidth, float imgHeight);
-            void SetFromVectors(const Vec3& forward, const Vec3& pos, const Vec3& right, const Vec3& up, float near, float far, float fov, float aspect);
+            void SetFromParams(
+                const Transform& view,
+                float farDist);
+            void SetFromVectors(
+                const Vec3& forward,
+                const Vec3& pos,
+                const Vec3& rightVec,
+                const Vec3& up,
+                float farDist);
+            void SetFromVectors(
+                const Vec3& forward,
+                const Vec3& pos,
+                const Vec3& right,
+                const Vec3& up,
+                float near, float far, float fov, float aspect);
             void SetFromOpenGLViewProjection(const Mat4x4& view, const Mat4x4& proj);
 
             const Plane& GetBottomPlane() const { return bottom; }

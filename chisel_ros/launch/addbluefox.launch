@@ -16,10 +16,10 @@
              inconsistencies are detected (see use_voxel_carving)-->
         <param name="carving_dist_m" value="0.05"/>
         <!-- The size of each TSDF voxel in meters-->
-        <param name="voxel_resolution_m" value="0.1"/>
+        <param name="voxel_resolution_m" value="0.05"/>
         <!-- The maximum distance (in meters) that will be constructed. Use lower values
              for close-up reconstructions and to save on memory. -->
-        <param name="far_plane_dist" value="6"/>
+        <param name="far_plane_dist" value="3"/>
         <!-- Mode to use for reconstruction. There are two modes: DepthImage and PointCloud.
              Only use PointCloud if no depth image is available. It is *much* slower-->
         <param name="fusion_mode" value="DepthImage"/>
@@ -30,10 +30,11 @@
         <param name="image_width" value="752"/>
         <param name="image_height" value="480"/>
         <!-- Pinhole Parameter, if not pinhole can be ignored-->
-        <param name="fx" value="458.654"/>
-        <param name="cx" value="367.215"/>
-        <param name="fy" value="457.296"/>
-        <param name="cy" value="248.375"/>
+        <param name="fx" value="3.6537093297021136e+02" />
+	    <param name="cx" value="3.6964744957606678e+02" />
+	    <param name="fy" value="3.6507591213493185e+02" />
+	    <param name="cy" value="2.4095181606217392e+02" />
+
         <!-- Fisheye Parameter, steps a degree, if not can be ignored-->
         <!-- <param name="degree_step" value="4"/> -->
 
@@ -42,9 +43,11 @@
         <param name="Colorimage_topic" value="/remode/reference"/>
         <param name="Odometry_topic" value="/vins_estimator/cur_pose"/> -->
 
-        <param name="Depthimage_topic" value="/euroc_node/depth"/>
-        <param name="Colorimage_topic" value="/euroc_node/colordepth"/>
-        <param name="Odometry_topic" value="/euroc_node/pose"/>
+        <param name="Depthimage_topic" value="/hybrid_map/depth"/>
+        <param name="Colorimage_topic" value="/hybrid_map/reference"/>
+        <param name="Odometry_topic" value="/vins_estimator/camera_pose"/>
+        <!-- <param name="Odometry_topic" value="/self_calibration_estimator/cur_pose"/> -->
+
 
     </node>
 </launch>

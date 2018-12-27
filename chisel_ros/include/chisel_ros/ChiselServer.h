@@ -22,26 +22,34 @@
 #ifndef CHISELSERVER_H_
 #define CHISELSERVER_H_
 
-#include <chisel_ros/ResetService.h>
-#include <chisel_ros/PauseService.h>
-#include <chisel_ros/SaveMeshService.h>
-#include <chisel_ros/GetAllChunksService.h>
+#include <deque>
+#include <Eigen/Eigen>
+
+#include <chisel_msgs/ResetService.h>
+#include <chisel_msgs/PauseService.h>
+#include <chisel_msgs/SaveMeshService.h>
+#include <chisel_msgs/GetAllChunksService.h>
+#include <chisel_msgs/UpdateAllMeshService.h>
 
 #include <memory>
 #include <open_chisel/Chisel.h>
 #include <open_chisel/ProjectionIntegrator.h>
 #include <open_chisel/camera/PinholeCamera.h>
+#include <open_chisel/camera/GeneralCamera.h>
 #include <open_chisel/camera/DepthImage.h>
 #include <open_chisel/camera/ColorImage.h>
 #include <open_chisel/pointcloud/PointCloud.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
 namespace chisel_ros
@@ -62,21 +70,21 @@ class ChiselServer
     struct RosCameraTopic
     {
         std::string imageTopic;
-        std::string infoTopic;
+        // std::string infoTopic;
         std::string transform;
-        chisel::PinholeCamera cameraModel;
+        // chisel::PinholeCamera cameraModel;
         ros::Subscriber imageSubscriber;
-        ros::Subscriber infoSubscriber;
-        ros::Publisher lastPosePublisher;
-        ros::Publisher frustumPublisher;
+        // ros::Subscriber infoSubscriber;
+        // ros::Publisher lastPosePublisher;
+        // ros::Publisher frustumPublisher;
         chisel::Transform lastPose;
         ros::Time lastImageTimestamp;
         bool gotPose;
-        bool gotInfo;
+        // bool gotInfo;
         bool gotImage;
 
         message_filters::Subscriber<sensor_msgs::Image> *sub_image;
-        message_filters::Subscriber<sensor_msgs::CameraInfo> *sub_info;
+        // message_filters::Subscriber<sensor_msgs::CameraInfo> *sub_info;
     };
 
     struct RosPointCloudTopic
@@ -89,6 +97,12 @@ class ChiselServer
         bool gotPose;
         bool gotCloud;
         message_filters::Subscriber<sensor_msgs::PointCloud2> *sub_point_cloud;
+    };
+
+    struct RosPoseStampedTopic
+    {
+        std::string poseTopic_name;
+        message_filters::Subscriber<geometry_msgs::PoseStamped> *sub_pose;
     };
 
     ChiselServer();
@@ -137,11 +151,20 @@ class ChiselServer
     void ColorCameraInfoCallback(sensor_msgs::CameraInfoConstPtr cameraInfo);
     void ColorImageCallback(sensor_msgs::ImageConstPtr colorImage);
 
-    void SubscribeAll(const std::string &depth_imageTopic, const std::string &depth_infoTopic,
-                      const std::string &color_imageTopic, const std::string &color_infoTopic,
-                      const std::string &transform, const std::string &point_cloud_topic);
-    void CallbackAll(sensor_msgs::ImageConstPtr depth_image, sensor_msgs::CameraInfoConstPtr depth_info,
-                     sensor_msgs::ImageConstPtr color_image, sensor_msgs::CameraInfoConstPtr color_info, sensor_msgs::PointCloud2ConstPtr point_cloud);
+    void OdometryCallback(const geometry_msgs::PoseStampedConstPtr msg);
+
+    void Subscribe_image_All(
+        const std::string &depth_imageTopic,
+        const std::string &color_imageTopic,
+        const std::string &odometry_topic);
+    void Callback_image_All(
+        sensor_msgs::ImageConstPtr depth_image,
+        sensor_msgs::ImageConstPtr color_image,
+        geometry_msgs::PoseStampedConstPtr msg);
+
+    void Subscribe_pointcloud_All(  const std::string &point_cloud_topic, const std::string &odometry_topic,
+                                    const bool pointcloud_transformed);
+    void Callback_pointcloud_All(   sensor_msgs::PointCloud2ConstPtr point_cloud, geometry_msgs::PoseStampedConstPtr msg);
 
     void SubscribePointCloud(const std::string &topic);
     void PointCloudCallback(sensor_msgs::PointCloud2ConstPtr pointcloud);
@@ -176,10 +199,11 @@ class ChiselServer
         farPlaneDist = dist;
     }
 
-    bool Reset(chisel_ros::ResetService::Request &request, chisel_ros::ResetService::Response &response);
-    bool TogglePaused(chisel_ros::PauseService::Request &request, chisel_ros::PauseService::Response &response);
-    bool SaveMesh(chisel_ros::SaveMeshService::Request &request, chisel_ros::SaveMeshService::Response &response);
-    bool GetAllChunks(chisel_ros::GetAllChunksService::Request &request, chisel_ros::GetAllChunksService::Response &response);
+    bool Reset(chisel_msgs::ResetService::Request &request, chisel_msgs::ResetService::Response &response);
+    bool TogglePaused(chisel_msgs::PauseService::Request &request, chisel_msgs::PauseService::Response &response);
+    bool SaveMesh(chisel_msgs::SaveMeshService::Request &request, chisel_msgs::SaveMeshService::Response &response);
+    bool GetAllChunks(chisel_msgs::GetAllChunksService::Request &request, chisel_msgs::GetAllChunksService::Response &response);
+    bool Update_all_mesh(chisel_msgs::UpdateAllMeshService::Request &request, chisel_msgs::UpdateAllMeshService::Response &response);
 
     inline bool IsPaused()
     {
@@ -207,22 +231,34 @@ class ChiselServer
     void SetColorPose(const Eigen::Affine3f &tf);
     void SetColorCameraInfo(const sensor_msgs::CameraInfoConstPtr &info);
     void SetDepthCameraInfo(const sensor_msgs::CameraInfoConstPtr &info);
+    void setPinholeCameraType(const float fx, const float fy, const float cx, const float cy, const int width, const int height);
+    void setFisheyeCameraType(const int degree_step, const int width, const int height);
+    void setPinholeCameraType(
+    const float fx, const float fy,
+    const float cx, const float cy,
+    const int width, const int height,
+    const float farPlaneDist, const float nearPlaneDist);
+    void setFisheyeCameraType(
+    const int degree_step, const int width, const int height,
+    const float farPlaneDist);
 
   protected:
     visualization_msgs::Marker CreateFrustumMarker(const chisel::Frustum &frustum);
 
     ros::NodeHandle nh;
 
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo,
-                                                      sensor_msgs::Image, sensor_msgs::CameraInfo,
-                                                      sensor_msgs::PointCloud2> MySyncPolicy;
-    message_filters::Synchronizer<MySyncPolicy> *sync;
+    typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, geometry_msgs::PoseStamped> MySyncPolicy_for_image;
+    message_filters::Synchronizer<MySyncPolicy_for_image> *sync_image;
+
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, geometry_msgs::PoseStamped> MySyncPolicy_for_pointcloud;
+    message_filters::Synchronizer<MySyncPolicy_for_pointcloud> *sync_pointcloud;
 
     chisel::ChiselPtr chiselMap;
-    tf::TransformListener transformListener;
+    // tf::TransformListener transformListener;
     std::shared_ptr<chisel::DepthImage<DepthData>> lastDepthImage;
     std::shared_ptr<chisel::ColorImage<ColorData>> lastColorImage;
     chisel::PointCloudPtr lastPointCloud;
+    std::vector<float> cloud_certianity;
     chisel::ProjectionIntegrator projectionIntegrator;
     std::string baseTransform;
     std::string meshTopic;
@@ -234,14 +270,20 @@ class ChiselServer
     ros::ServiceServer pauseServer;
     ros::ServiceServer saveMeshServer;
     ros::ServiceServer getAllChunksServer;
+    ros::ServiceServer update_all_mesh;
     RosCameraTopic depthCamera;
     RosCameraTopic colorCamera;
+    chisel::Transform CameraPose;
+    chisel::GeneralCamera general_camera;
+    chisel::PinholeCamera to_delete_temp;
     RosPointCloudTopic pointcloudTopic;
+    RosPoseStampedTopic poseTopic;
     bool useColor;
     bool hasNewData;
     float nearPlaneDist;
     float farPlaneDist;
     bool isPaused;
+    bool pointcloud_transformed;
     FusionMode mode;
 };
 typedef std::shared_ptr<ChiselServer> ChiselServerPtr;

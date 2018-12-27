@@ -50,12 +50,8 @@ void Chisel::Reset()
 void Chisel::UpdateMeshes()
 {
     printf("number of chunk to update: %lu\n", meshesToUpdate.size());
-    static int cnt = 0;
-    if (cnt++ % 10 == 0)
-    {
-        chunkManager.RecomputeMeshes(meshesToUpdate);
-        meshesToUpdate.clear();
-    }
+    chunkManager.RecomputeMeshes(meshesToUpdate);
+    meshesToUpdate.clear();
 }
 
 void Chisel::GarbageCollect(const ChunkIDList &chunks)
@@ -104,54 +100,66 @@ bool Chisel::SaveAllMeshesToPLY(const std::string &filename)
     return success;
 }
 
-void Chisel::IntegratePointCloud(const ProjectionIntegrator &integrator, const PointCloud &cloud, const Transform &extrinsic, float truncation, float maxDist)
+void Chisel::IntegratePointCloud(
+    const ProjectionIntegrator &integrator,
+    const PointCloud &cloud,
+    const Transform &extrinsic,
+    float maxDist,
+    const std::vector<float> &certainity)
 {
     ChunkIDList chunksIntersecting;
-    chunkManager.GetChunkIDsIntersecting(cloud, extrinsic, truncation, maxDist, &chunksIntersecting);
+    Chunk_point_Map chunk_point_list;
+    Chunk_pointindex_Map chunk_pointindex_list;
+    // chunkManager.GetChunkIDsIntersecting(cloud, extrinsic, certainity, maxDist, &chunksIntersecting, &chunk_point_list);
+    chunkManager.GetChunkIDsIntersecting(cloud, extrinsic, certainity, maxDist, &chunksIntersecting, chunk_pointindex_list);
     printf("There are %lu chunks intersecting\n", chunksIntersecting.size());
+    printf("There are %lu chunk_point_list \n", chunk_pointindex_list.size());
+
     if (chunksIntersecting.size() == 0)
         return;
+
     std::mutex mutex;
     ChunkIDList garbageChunks;
-    //for(const ChunkID& chunkID : chunksIntersecting)
+
+    // for(const ChunkID& chunkID : chunksIntersecting)
     parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID &chunkID)
-                 {
-            bool chunkNew = false;
+    {
+        bool chunkNew = false;
 
-            mutex.lock();
-            if (!chunkManager.HasChunk(chunkID))
+        mutex.lock();
+        if (!chunkManager.HasChunk(chunkID))
+        {
+            chunkNew = true;
+            chunkManager.CreateChunk(chunkID);
+        }
+        ChunkPtr chunk = chunkManager.GetChunk(chunkID);
+        mutex.unlock();
+
+        bool needsUpdate = integrator.IntegratePointCloud(cloud, extrinsic, chunk.get(), chunk_pointindex_list, certainity);
+
+        mutex.lock();
+        if (needsUpdate)
+        {
+            for (int dx = -1; dx <= 1; dx++)
             {
-                chunkNew = true;
-                chunkManager.CreateChunk(chunkID);
-            }
-
-            ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-            mutex.unlock();
-
-            puts("integrate 1");
-            bool needsUpdate = integrator.Integrate(cloud, extrinsic, chunk.get());
-            puts("integrate 2");
-
-            mutex.lock();
-            if (needsUpdate)
-            {
-                for (int dx = -1; dx <= 1; dx++)
+                for (int dy = -1; dy <= 1; dy++)
                 {
-                    for (int dy = -1; dy <= 1; dy++)
+                    for (int dz = -1; dz <= 1; dz++)
                     {
-                        for (int dz = -1; dz <= 1; dz++)
-                        {
-                            meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = true;
-                        }
+                        meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = true;
                     }
                 }
             }
-            else if(chunkNew)
-            {
-                garbageChunks.push_back(chunkID);
-            }
-            mutex.unlock();
-                 });
+        }
+        else if(chunkNew)
+        {
+            garbageChunks.push_back(chunkID);
+        }
+        mutex.unlock();
+    });
+
+    printf("Integrate the pointcloud done!\n");
+
     GarbageCollect(garbageChunks);
     chunkManager.PrintMemoryStatistics();
 }

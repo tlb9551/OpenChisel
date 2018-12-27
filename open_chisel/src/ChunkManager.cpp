@@ -26,7 +26,6 @@
 #include <open_chisel/geometry/AABB.h>
 #include <open_chisel/marching_cubes/MarchingCubes.h>
 #include <open_chisel/geometry/Raycast.h>
-#include <iostream>
 
 namespace chisel
 {
@@ -149,7 +148,6 @@ void ChunkManager::RecomputeMeshes(const ChunkSet &chunkMeshes)
     for (int i = 0; i < nThread; i++)
     {
         int s = i * blockSize;
-        printf("thread: %d, s: %d, blockSize: %d\n", i, s, blockSize);
         threads.push_back(std::thread([this, &mutex, &chunkIDList, n, s, blockSize]()
                                       {
                                       for (int j = 0, k = s + j; j < blockSize && k < n; j++, k++)
@@ -158,14 +156,6 @@ void ChunkManager::RecomputeMeshes(const ChunkSet &chunkMeshes)
     }
     for (int i = 0; i < nThread; i++)
         threads[i].join();
-
-    //for (const std::pair<ChunkID, bool> &chunk : chunkMeshes)
-    ////parallel_for(chunks.begin(), chunks.end(), [this, &mutex](const std::pair<ChunkID, bool> &chunk)
-    //{
-    //    if (chunk.second)
-    //        this->RecomputeMesh(ChunkID(chunk.first), mutex);
-    //}
-    ////);
 }
 
 ChunkMap::iterator ChunkManager::CreateChunk(const ChunkID &id)
@@ -211,7 +201,62 @@ void ChunkManager::GetChunkIDsIntersecting(const Frustum &frustum, ChunkIDList *
     //printf("%lu chunks intersect frustum\n", chunkList->size());
 }
 
-void ChunkManager::GetChunkIDsIntersecting(const PointCloud &cloud, const Transform &cameraTransform, float truncation, float maxDist, ChunkIDList *chunkList)
+void ChunkManager::GetChunkIDsIntersecting( const PointCloud &cloud, const Transform &cameraTransform, const std::vector<float> &certianity,
+                                            float maxDist, ChunkIDList *chunkList, Chunk_point_Map *chunk_point_list)
+{
+    // assert(!!chunkList);
+    // chunkList->clear();
+    // const float roundX = 1.0f / (chunkSize.x() * voxelResolutionMeters);
+    // const float roundY = 1.0f / (chunkSize.y() * voxelResolutionMeters);
+    // const float roundZ = 1.0f / (chunkSize.z() * voxelResolutionMeters);
+    // ChunkMap map;
+    // Point3 minVal(-std::numeric_limits<int>::max(), -std::numeric_limits<int>::max(), -std::numeric_limits<int>::max());
+    // Point3 maxVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+    // size_t numPoints = cloud.GetPoints().size();
+    // size_t i = 0;
+    // Vec3List cloud_point = cloud.GetPoints();
+    // for (int i = 0; i < cloud_point.size(); i++)//??? maybe can be accelerate by parallar compute
+    // {
+    //     Vec3 point = cloud_point[i];
+    //     Vec3 end = cameraTransform * point;
+    //     Vec3 start = cameraTransform.translation();
+    //     float len = (end - start).norm();
+
+    //     if (len > maxDist)
+    //     {
+    //         continue;
+    //     }
+
+    //     float truncation = 2 * certianity[i];
+        
+    //     Vec3 dir = (end - start).normalized();
+    //     Vec3 truncStart = end - dir * truncation;
+    //     truncStart = start + dir * 0.2;
+    //     Vec3 truncEnd = end + dir * truncation;
+    //     Vec3 startInt = Vec3(truncStart.x() * roundX, truncStart.y() * roundY, truncStart.z() * roundZ);
+    //     Vec3 endInt = Vec3(truncEnd.x() * roundX, truncEnd.y() * roundY, truncEnd.z() * roundZ);
+
+    //     Point3List intersectingChunks;
+    //     Raycast(startInt, endInt, minVal, maxVal, &intersectingChunks);
+
+    //     for (const Point3 &id : intersectingChunks)
+    //     {
+    //         if (map.find(id) == map.end())
+    //         {
+    //             map[id] = ChunkPtr();
+    //         }
+    //         (*chunk_point_list)[id].AddPoint(point);//here
+    //     }
+    // }
+
+    // for (const std::pair<ChunkID, ChunkPtr> &it : map)
+    // {
+    //     chunkList->push_back(it.first);
+    // }
+}
+
+void ChunkManager::GetChunkIDsIntersecting( const PointCloud &cloud, const Transform &cameraTransform, const std::vector<float> &certianity,
+                                            float maxDist, ChunkIDList *chunkList, Chunk_pointindex_Map &chunk_pointindex_list)
 {
     assert(!!chunkList);
     chunkList->clear();
@@ -223,8 +268,10 @@ void ChunkManager::GetChunkIDsIntersecting(const PointCloud &cloud, const Transf
     Point3 maxVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
     size_t numPoints = cloud.GetPoints().size();
     size_t i = 0;
-    for (const Vec3 &point : cloud.GetPoints())
+    Vec3List cloud_point = cloud.GetPoints();
+    for (int i = 0; i < cloud_point.size(); i++)//??? maybe can be accelerate by parallar compute
     {
+        Vec3 point = cloud_point[i];
         Vec3 end = cameraTransform * point;
         Vec3 start = cameraTransform.translation();
         float len = (end - start).norm();
@@ -234,8 +281,11 @@ void ChunkManager::GetChunkIDsIntersecting(const PointCloud &cloud, const Transf
             continue;
         }
 
+        float truncation = 3 * certianity[i];
+        // truncation = truncation < 0.2 ? 0.2 : truncation;
         Vec3 dir = (end - start).normalized();
         Vec3 truncStart = end - dir * truncation;
+        // truncStart = start;
         Vec3 truncEnd = end + dir * truncation;
         Vec3 startInt = Vec3(truncStart.x() * roundX, truncStart.y() * roundY, truncStart.z() * roundZ);
         Vec3 endInt = Vec3(truncEnd.x() * roundX, truncEnd.y() * roundY, truncEnd.z() * roundZ);
@@ -246,7 +296,10 @@ void ChunkManager::GetChunkIDsIntersecting(const PointCloud &cloud, const Transf
         for (const Point3 &id : intersectingChunks)
         {
             if (map.find(id) == map.end())
+            {
                 map[id] = ChunkPtr();
+            }
+            chunk_pointindex_list[id].push_back(i);//here
         }
     }
 

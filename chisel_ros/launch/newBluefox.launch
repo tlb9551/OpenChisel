@@ -19,7 +19,7 @@
         <param name="voxel_resolution_m" value="0.1"/>
         <!-- The maximum distance (in meters) that will be constructed. Use lower values
              for close-up reconstructions and to save on memory. -->
-        <param name="far_plane_dist" value="6"/>
+        <param name="far_plane_dist" value="4"/>
         <!-- Mode to use for reconstruction. There are two modes: DepthImage and PointCloud.
              Only use PointCloud if no depth image is available. It is *much* slower-->
         <param name="fusion_mode" value="DepthImage"/>
@@ -30,10 +30,10 @@
         <param name="image_width" value="752"/>
         <param name="image_height" value="480"/>
         <!-- Pinhole Parameter, if not pinhole can be ignored-->
-        <param name="fx" value="458.654"/>
-        <param name="cx" value="367.215"/>
-        <param name="fy" value="457.296"/>
-        <param name="cy" value="248.375"/>
+        <param name="fx" value="369.763407" />
+        <param name="cx" value="373.053899" />
+        <param name="fy" value="369.683719" />
+        <param name="cy" value="239.189192" />
         <!-- Fisheye Parameter, steps a degree, if not can be ignored-->
         <!-- <param name="degree_step" value="4"/> -->
 
@@ -42,9 +42,9 @@
         <param name="Colorimage_topic" value="/remode/reference"/>
         <param name="Odometry_topic" value="/vins_estimator/cur_pose"/> -->
 
-        <param name="Depthimage_topic" value="/euroc_node/depth"/>
-        <param name="Colorimage_topic" value="/euroc_node/colordepth"/>
-        <param name="Odometry_topic" value="/euroc_node/pose"/>
+        <param name="Depthimage_topic" value="/hybrid_map/depth"/>
+        <param name="Colorimage_topic" value="/hybrid_map/reference"/>
+        <param name="Odometry_topic" value="/vins_estimator/camera_pose"/>
 
     </node>
 </launch>

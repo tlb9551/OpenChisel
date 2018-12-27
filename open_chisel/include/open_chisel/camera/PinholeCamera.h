@@ -29,7 +29,6 @@
 
 namespace chisel
 {
-
     class PinholeCamera
     {
         public:
@@ -64,11 +63,9 @@ namespace chisel
             int height;
             float nearPlane;
             float farPlane;
-
     };
     typedef std::shared_ptr<PinholeCamera> PinholeCameraPtr;
     typedef std::shared_ptr<const PinholeCamera> PinholeCameraConstPtr;
-
 } // namespace chisel 
 
 #endif // PINHOLECAMERA_H_ 

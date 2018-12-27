@@ -83,7 +83,6 @@ namespace chisel
             stream << std::endl;
         }
 
-        return true;
 
     }
 }

@@ -19,61 +19,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef DISTVOXEL_H_
-#define DISTVOXEL_H_
+#ifndef INVERSRWEIGHTER_H_
+#define INVERSRWEIGHTER_H_
 
-#include <limits>
-#include <stdint.h>
-#include <math.h>
-#include <open_chisel/FixedPointFloat.h>
+#include "Weighter.h"
 
 namespace chisel
 {
 
-    class DistVoxel
+    class InverseWeighter : public Weighter
     {
         public:
-            DistVoxel();
-            virtual ~DistVoxel();
-
-            inline float GetSDF() const
+            InverseWeighter() = default;
+            InverseWeighter(float w)
             {
-                return sdf;
+                weight = w;
+            }
+            virtual ~InverseWeighter()
+            {
+
             }
 
-            inline void SetSDF(const float& distance)
+            virtual float GetWeight(float surfaceDist, float truncationDist) const
             {
-                sdf = distance;
-            }
-
-            inline float GetWeight() const { return weight; }
-            inline void SetWeight(const float& w) { weight = w; }
-
-            inline void Integrate(const float& distUpdate, const float& weightUpdate)
-            {
-                float oldSDF = GetSDF();
-                float oldWeight = GetWeight();
-                float newDist = (oldWeight * oldSDF + weightUpdate * distUpdate) / (weightUpdate + oldWeight);
-                SetSDF(newDist);
-                SetWeight(oldWeight + weightUpdate);
-            }
-
-            inline void Carve()
-            {
-                Reset();
-            }
-
-            inline void Reset()
-            {
-                sdf = 99999;
-                weight = 0;
+                return weight / (1 + surfaceDist);
             }
 
         protected:
-           float sdf;
-           float weight;
+            float weight;
+
     };
+    typedef std::shared_ptr<InverseWeighter> InverseWeighterPtr;
+    typedef std::shared_ptr<const InverseWeighter> InverseWeighterConstPtr;
 
 } // namespace chisel 
 
-#endif // DISTVOXEL_H_ 
+#endif // CONSTANTWEIGHTER_H_ 

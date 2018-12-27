@@ -6,7 +6,7 @@
         <param name="chunk_size_y" value="10"/>
         <param name="chunk_size_z" value="10"/>
         <!--- The distance away from the surface (in cm) we are willing to reconstuct -->
-        <param name="truncation_scale" value="0.5"/>
+        <param name="truncation_scale" value="1.0"/>
         <!-- Whether to use voxel carving. If set to true, space near the sensor will be
              carved away, allowing for moving objects and other inconsistencies to disappear -->
         <param name="use_voxel_carving" value="true"/>
@@ -14,7 +14,7 @@
         <param name="use_color" value="true"/>
         <!-- The distance from the surface (in meters) which will get carved away when
              inconsistencies are detected (see use_voxel_carving)-->
-        <param name="carving_dist_m" value="0.05"/>
+        <param name="carving_dist_m" value="0.5"/>
         <!-- The size of each TSDF voxel in meters-->
         <param name="voxel_resolution_m" value="0.1"/>
         <!-- The maximum distance (in meters) that will be constructed. Use lower values
@@ -27,13 +27,13 @@
         <!-- camera type, Pinhole or Fisheye-->
         <param name="camera_type" value= "Pinhole"/>
         <!-- basic information for images-->
-        <param name="image_width" value="752"/>
-        <param name="image_height" value="480"/>
+        <param name="image_width" value="320"/>
+        <param name="image_height" value="256"/>
         <!-- Pinhole Parameter, if not pinhole can be ignored-->
-        <param name="fx" value="458.654"/>
-        <param name="cx" value="367.215"/>
-        <param name="fy" value="457.296"/>
-        <param name="cy" value="248.375"/>
+        <param name="fx" value="157.346130" />
+        <param name="cx" value="158.746338" />
+        <param name="fy" value="197.164642" />
+        <param name="cy" value="127.567574" />
         <!-- Fisheye Parameter, steps a degree, if not can be ignored-->
         <!-- <param name="degree_step" value="4"/> -->
 
@@ -42,9 +42,9 @@
         <param name="Colorimage_topic" value="/remode/reference"/>
         <param name="Odometry_topic" value="/vins_estimator/cur_pose"/> -->
 
-        <param name="Depthimage_topic" value="/euroc_node/depth"/>
-        <param name="Colorimage_topic" value="/euroc_node/colordepth"/>
-        <param name="Odometry_topic" value="/euroc_node/pose"/>
+        <param name="Depthimage_topic" value="/depthnet_node/depth"/>
+        <param name="Colorimage_topic" value="/depthnet_node/reference_image"/>
+        <param name="Odometry_topic" value="/vins_estimator/camera_pose"/>
 
     </node>
 </launch>

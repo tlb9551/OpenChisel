@@ -2,6 +2,7 @@
 #define RAYCAST_H_
 
 #include "Geometry.h"
+#include <iostream>
 
 float signum(int x);
 float mod(float value, float modulus);

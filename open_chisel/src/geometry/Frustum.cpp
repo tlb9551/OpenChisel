@@ -41,7 +41,6 @@ namespace chisel
     bool Frustum::Intersects(const AABB& box) const
     {
         const Plane* planes[] = { &far, &near, &top, &bottom, &left, &right };
-
         for (const Plane* plane : planes)
         {
             Vec3 axisVert;
@@ -74,7 +73,6 @@ namespace chisel
             if (axisVert.dot(normal) + plane->distance > 0.0f)
                 return true;
         }
-
         return false;
     }
 
@@ -140,7 +138,13 @@ namespace chisel
         SetFromVectors(d, p, right, up, n, f, fov, aspect);
     }
 
-    void Frustum::SetFromParams(const Transform& view, float nearDist, float farDist, float fx, float fy, float /*cx*/, float cy, float imgWidth, float imgHeight)
+    void Frustum::SetFromParams(
+    const Transform& view,
+    float nearDist,
+    float farDist,
+    float fx, float fy,
+    float /*cx*/, float cy,
+    float imgWidth, float imgHeight)
     {
         Mat3x3 r = view.linear();
         Vec3 right = r.col(0);
@@ -152,7 +156,16 @@ namespace chisel
         SetFromVectors(d, p, right, up, nearDist, farDist, fov, aspect);
     }
 
-    void Frustum::SetFromVectors(const Vec3& forward, const Vec3& pos, const Vec3& rightVec, const Vec3& up, float nearDist, float farDist, float fov, float aspect)
+
+    void Frustum::SetFromVectors(
+        const Vec3& forward,
+        const Vec3& pos,
+        const Vec3& rightVec,
+        const Vec3& up,
+        float nearDist,
+        float farDist,
+        float fov,
+        float aspect)
     {
         float angleTangent = tan(fov / 2);
         float heightFar = angleTangent * farDist;
@@ -171,6 +184,8 @@ namespace chisel
         Vec3 nearBotLeft = nearCenter - (up * heightNear) - (rightVec * widthNear);
         Vec3 nearBotRight = nearCenter - (up * heightNear) + (rightVec * widthNear);
 
+        //Plane::Plane(const Vec3& a, const Vec3& b, const Vec3& c)
+        //norm = ab cross ac; norm should point to the inner side of the Frustum
         near = Plane(nearBotLeft, nearTopLeft, nearBotRight);
         far = Plane(farTopRight, farTopLeft, farBotRight);
         left = Plane(farTopLeft, nearTopLeft, farBotLeft);
@@ -218,5 +233,89 @@ namespace chisel
         lines[23] = corners[4];
     }
 
+    void Frustum::SetFromParams(
+    const Transform& view,
+    float farDist)
+    {
+        Mat3x3 r = view.linear();
+        Vec3 right = r.col(0);
+        Vec3 up = -r.col(1);
+        Vec3 d = r.col(2);
+        Vec3 p = view.translation();
+        SetFromVectors(d, p, right, up, farDist);
+    }
+
+    void Frustum::SetFromVectors(
+        const Vec3& forward,
+        const Vec3& pos,
+        const Vec3& rightVec,
+        const Vec3& up,
+        float farDist)
+    {
+        float heightFar = farDist;
+        float widthFar = farDist;
+        float heightNear = farDist;
+        float widthNear = farDist;
+
+        Vec3 farCenter = pos + forward * farDist;
+        Vec3 farTopLeft = farCenter + (up * heightFar) - (rightVec * widthFar);
+        Vec3 farTopRight = farCenter + (up * heightFar) + (rightVec * widthFar);
+        Vec3 farBotLeft = farCenter - (up * heightFar) - (rightVec * widthFar);
+        Vec3 farBotRight = farCenter - (up * heightFar) + (rightVec * widthFar);
+
+        Vec3 nearCenter = pos;
+        Vec3 nearTopLeft = nearCenter + (up * heightNear) - (rightVec * widthNear);
+        Vec3 nearTopRight = nearCenter + (up * heightNear) + (rightVec * widthNear);
+        Vec3 nearBotLeft = nearCenter - (up * heightNear) - (rightVec * widthNear);
+        Vec3 nearBotRight = nearCenter - (up * heightNear) + (rightVec * widthNear);
+
+        //Plane::Plane(const Vec3& a, const Vec3& b, const Vec3& c)
+        //norm = ab cross ac; norm should point to the inner side of the Frustum
+        near = Plane(nearBotLeft, nearTopLeft, nearBotRight);
+        far = Plane(farTopRight, farTopLeft, farBotRight);
+        left = Plane(farTopLeft, nearTopLeft, farBotLeft);
+        right = Plane(nearTopRight, farTopRight, nearBotRight);
+        top = Plane(nearTopLeft, farTopLeft, nearTopRight);
+        bottom = Plane(nearBotRight, farBotLeft, nearBotLeft);
+
+        corners[0] = farTopLeft.cast<float>();
+        corners[1] = farTopRight.cast<float>();
+        corners[2] = farBotLeft.cast<float>();
+        corners[3] = farBotRight.cast<float>();
+        corners[4] = nearBotRight.cast<float>();
+        corners[5] = nearTopLeft.cast<float>();
+        corners[6] = nearTopRight.cast<float>();
+        corners[7] = nearBotLeft.cast<float>();
+
+        // Far face lines.
+        lines[0] = corners[0];
+        lines[1] = corners[1];
+        lines[2] = corners[3];
+        lines[3] = corners[2];
+        lines[4] = corners[1];
+        lines[5] = corners[3];
+        lines[6] = corners[2];
+        lines[7] = corners[0];
+
+        // Near face lines.
+        lines[8] = corners[4];
+        lines[9] = corners[7];
+        lines[10] = corners[6];
+        lines[11] = corners[5];
+        lines[12] = corners[5];
+        lines[13] = corners[7];
+        lines[14] = corners[6];
+        lines[15] = corners[4];
+
+        // Connecting lines.
+        lines[16] = corners[0];
+        lines[17] = corners[5];
+        lines[18] = corners[1];
+        lines[19] = corners[6];
+        lines[20] = corners[2];
+        lines[21] = corners[7];
+        lines[22] = corners[3];
+        lines[23] = corners[4];
+    }
 
 } // namespace chisel 

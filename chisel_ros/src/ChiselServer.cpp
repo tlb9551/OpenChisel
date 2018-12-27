@@ -20,11 +20,13 @@
 // SOFTWARE.
 
 #include <chisel_ros/ChiselServer.h>
-#include <chisel_ros/Conversions.h>
 #include <chisel_ros/Serialization.h>
+#include <chisel_ros/Conversions.h>
 #include <visualization_msgs/Marker.h>
 #include <open_chisel/truncation/QuadraticTruncator.h>
 #include <open_chisel/weighting/ConstantWeighter.h>
+#include <open_chisel/weighting/InverseWeighter.h>
+#include <open_chisel/weighting/ProbabilisticWeight.h>
 
 namespace chisel_ros
 {
@@ -44,6 +46,7 @@ void ChiselServer::AdvertiseServices()
     pauseServer = nh.advertiseService("TogglePaused", &ChiselServer::TogglePaused, this);
     saveMeshServer = nh.advertiseService("SaveMesh", &ChiselServer::SaveMesh, this);
     getAllChunksServer = nh.advertiseService("GetAllChunks", &ChiselServer::GetAllChunks, this);
+    update_all_mesh = nh.advertiseService("UpdateAllMesh", &ChiselServer::Update_all_mesh, this);
 }
 
 void ChiselServer::SetupMeshPublisher(const std::string &topic)
@@ -74,113 +77,138 @@ void ChiselServer::SetupChunkBoxPublisher(const std::string &boxTopic)
 
 void ChiselServer::SetupDepthPosePublisher(const std::string &depthPoseTopic)
 {
-    depthCamera.lastPosePublisher = nh.advertise<geometry_msgs::PoseStamped>(depthPoseTopic, 1);
+    // depthCamera.lastPosePublisher = nh.advertise<geometry_msgs::PoseStamped>(depthPoseTopic, 1);
 }
 
 void ChiselServer::SetupColorPosePublisher(const std::string &colorPoseTopic)
 {
-    colorCamera.lastPosePublisher = nh.advertise<geometry_msgs::PoseStamped>(colorPoseTopic, 1);
+    // colorCamera.lastPosePublisher = nh.advertise<geometry_msgs::PoseStamped>(colorPoseTopic, 1);
 }
 
 void ChiselServer::SetupDepthFrustumPublisher(const std::string &frustumTopic)
 {
-    depthCamera.frustumPublisher = nh.advertise<visualization_msgs::Marker>(frustumTopic, 1);
+    // depthCamera.frustumPublisher = nh.advertise<visualization_msgs::Marker>(frustumTopic, 1);
 }
 
 void ChiselServer::SetupColorFrustumPublisher(const std::string &frustumTopic)
 {
-    colorCamera.frustumPublisher = nh.advertise<visualization_msgs::Marker>(frustumTopic, 1);
+    // colorCamera.frustumPublisher = nh.advertise<visualization_msgs::Marker>(frustumTopic, 1);
+}
+
+void ChiselServer::setPinholeCameraType(
+    const float fx, const float fy,
+    const float cx, const float cy,
+    const int width, const int height,
+    const float farPlaneDist, const float nearPlaneDist)
+{
+    general_camera.SetType(chisel::GeneralCamera::CameraType::Pinhole);
+    general_camera.SetWidth(width);
+    general_camera.SetHeight(height);
+    general_camera.SetIntrinsics(fx, fy,cx, cy);
+    general_camera.SetNearPlane(nearPlaneDist);
+    general_camera.SetFarPlane(farPlaneDist);
+}
+
+void ChiselServer::setFisheyeCameraType(
+    const int degree_step, const int width, const int height,
+    const float farPlaneDist)
+{
+    general_camera.SetType(chisel::GeneralCamera::CameraType::Fisheye);
+    general_camera.SetWidth(width);
+    general_camera.SetHeight(height);
+    general_camera.SetDegreeStep(degree_step);
+    general_camera.SetFarPlane(farPlaneDist);
 }
 
 void ChiselServer::PublishDepthFrustum()
 {
-    chisel::Frustum frustum;
-    depthCamera.cameraModel.SetupFrustum(depthCamera.lastPose, &frustum);
-    visualization_msgs::Marker marker = CreateFrustumMarker(frustum);
-    depthCamera.frustumPublisher.publish(marker);
+    // chisel::Frustum frustum;
+    // depthCamera.cameraModel.SetupFrustum(depthCamera.lastPose, &frustum);
+    // visualization_msgs::Marker marker = CreateFrustumMarker(frustum);
+    // depthCamera.frustumPublisher.publish(marker);
 }
 
 void ChiselServer::PublishColorFrustum()
 {
-    chisel::Frustum frustum;
-    colorCamera.cameraModel.SetupFrustum(colorCamera.lastPose, &frustum);
-    visualization_msgs::Marker marker = CreateFrustumMarker(frustum);
-    colorCamera.frustumPublisher.publish(marker);
+    // chisel::Frustum frustum;
+    // colorCamera.cameraModel.SetupFrustum(colorCamera.lastPose, &frustum);
+    // visualization_msgs::Marker marker = CreateFrustumMarker(frustum);
+    // colorCamera.frustumPublisher.publish(marker);
 }
 
 visualization_msgs::Marker ChiselServer::CreateFrustumMarker(const chisel::Frustum &frustum)
 {
-    visualization_msgs::Marker marker;
-    marker.id = 0;
-    marker.header.frame_id = baseTransform;
-    marker.color.r = 1.;
-    marker.color.g = 1.;
-    marker.color.b = 1.;
-    marker.color.a = 1.;
-    marker.pose.position.x = 0;
-    marker.pose.position.y = 0;
-    marker.pose.position.z = 0;
-    marker.pose.orientation.x = 0.0;
-    marker.pose.orientation.y = 0.0;
-    marker.pose.orientation.z = 0.0;
-    marker.pose.orientation.w = 1.0;
-    marker.scale.x = 0.01;
-    marker.scale.y = 0.01;
-    marker.scale.z = 0.01;
+    // visualization_msgs::Marker marker;
+    // marker.id = 0;
+    // marker.header.frame_id = baseTransform;
+    // marker.color.r = 1.;
+    // marker.color.g = 1.;
+    // marker.color.b = 1.;
+    // marker.color.a = 1.;
+    // marker.pose.position.x = 0;
+    // marker.pose.position.y = 0;
+    // marker.pose.position.z = 0;
+    // marker.pose.orientation.x = 0.0;
+    // marker.pose.orientation.y = 0.0;
+    // marker.pose.orientation.z = 0.0;
+    // marker.pose.orientation.w = 1.0;
+    // marker.scale.x = 0.01;
+    // marker.scale.y = 0.01;
+    // marker.scale.z = 0.01;
 
-    marker.type = visualization_msgs::Marker::LINE_LIST;
-    const chisel::Vec3 *lines = frustum.GetLines();
-    for (int i = 0; i < 24; i++)
-    {
-        const chisel::Vec3 &linePoint = lines[i];
-        geometry_msgs::Point pt;
-        pt.x = linePoint.x();
-        pt.y = linePoint.y();
-        pt.z = linePoint.z();
-        marker.points.push_back(pt);
-    }
+    // marker.type = visualization_msgs::Marker::LINE_LIST;
+    // const chisel::Vec3 *lines = frustum.GetLines();
+    // for (int i = 0; i < 24; i++)
+    // {
+    //     const chisel::Vec3 &linePoint = lines[i];
+    //     geometry_msgs::Point pt;
+    //     pt.x = linePoint.x();
+    //     pt.y = linePoint.y();
+    //     pt.z = linePoint.z();
+    //     marker.points.push_back(pt);
+    // }
 
-    return marker;
+    // return marker;
 }
 
 void ChiselServer::PublishDepthPose()
 {
-    chisel::Transform lastPose = depthCamera.lastPose;
+    // chisel::Transform lastPose = depthCamera.lastPose;
 
-    geometry_msgs::PoseStamped pose;
-    pose.header.frame_id = baseTransform;
-    pose.header.stamp = depthCamera.lastImageTimestamp;
-    pose.pose.position.x = lastPose.translation()(0);
-    pose.pose.position.y = lastPose.translation()(1);
-    pose.pose.position.z = lastPose.translation()(2);
+    // geometry_msgs::PoseStamped pose;
+    // pose.header.frame_id = baseTransform;
+    // pose.header.stamp = depthCamera.lastImageTimestamp;
+    // pose.pose.position.x = lastPose.translation()(0);
+    // pose.pose.position.y = lastPose.translation()(1);
+    // pose.pose.position.z = lastPose.translation()(2);
 
-    chisel::Quaternion quat(lastPose.rotation());
-    pose.pose.orientation.x = quat.x();
-    pose.pose.orientation.y = quat.y();
-    pose.pose.orientation.z = quat.z();
-    pose.pose.orientation.w = quat.w();
+    // chisel::Quaternion quat(lastPose.rotation());
+    // pose.pose.orientation.x = quat.x();
+    // pose.pose.orientation.y = quat.y();
+    // pose.pose.orientation.z = quat.z();
+    // pose.pose.orientation.w = quat.w();
 
-    depthCamera.lastPosePublisher.publish(pose);
+    // depthCamera.lastPosePublisher.publish(pose);
 }
 
 void ChiselServer::PublishColorPose()
 {
-    chisel::Transform lastPose = colorCamera.lastPose;
+    // chisel::Transform lastPose = colorCamera.lastPose;
 
-    geometry_msgs::PoseStamped pose;
-    pose.header.frame_id = baseTransform;
-    pose.header.stamp = colorCamera.lastImageTimestamp;
-    pose.pose.position.x = lastPose.translation()(0);
-    pose.pose.position.y = lastPose.translation()(1);
-    pose.pose.position.z = lastPose.translation()(2);
+    // geometry_msgs::PoseStamped pose;
+    // pose.header.frame_id = baseTransform;
+    // pose.header.stamp = colorCamera.lastImageTimestamp;
+    // pose.pose.position.x = lastPose.translation()(0);
+    // pose.pose.position.y = lastPose.translation()(1);
+    // pose.pose.position.z = lastPose.translation()(2);
 
-    chisel::Quaternion quat(lastPose.rotation());
-    pose.pose.orientation.x = quat.x();
-    pose.pose.orientation.y = quat.y();
-    pose.pose.orientation.z = quat.z();
-    pose.pose.orientation.w = quat.w();
+    // chisel::Quaternion quat(lastPose.rotation());
+    // pose.pose.orientation.x = quat.x();
+    // pose.pose.orientation.y = quat.y();
+    // pose.pose.orientation.z = quat.z();
+    // pose.pose.orientation.w = quat.w();
 
-    colorCamera.lastPosePublisher.publish(pose);
+    // colorCamera.lastPosePublisher.publish(pose);
 }
 
 ChiselServer::ChiselServer(const ros::NodeHandle &nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode)
@@ -189,73 +217,97 @@ ChiselServer::ChiselServer(const ros::NodeHandle &nodeHanlde, int chunkSizeX, in
     chiselMap.reset(new chisel::Chisel(Eigen::Vector3i(chunkSizeX, chunkSizeY, chunkSizeZ), resolution, color));
 }
 
-bool ChiselServer::TogglePaused(chisel_ros::PauseService::Request &request, chisel_ros::PauseService::Response &response)
+bool ChiselServer::TogglePaused(chisel_msgs::PauseService::Request &request, chisel_msgs::PauseService::Response &response)
 {
     SetPaused(!IsPaused());
     return true;
 }
 
-bool ChiselServer::Reset(chisel_ros::ResetService::Request &request, chisel_ros::ResetService::Response &response)
+bool ChiselServer::Reset(chisel_msgs::ResetService::Request &request, chisel_msgs::ResetService::Response &response)
 {
     chiselMap->Reset();
     return true;
 }
 
-void ChiselServer::SubscribeAll(
-    const std::string &depth_imageTopic, const std::string &depth_infoTopic,
-    const std::string &color_imageTopic, const std::string &color_infoTopic,
-    const std::string &transform, const std::string &point_cloud_topic)
+void ChiselServer::Subscribe_image_All(
+    const std::string &depth_imageTopic,
+    const std::string &color_imageTopic,
+    const std::string &odometry_topic)
 {
     depthCamera.imageTopic = depth_imageTopic;
-    depthCamera.infoTopic = depth_infoTopic;
-    depthCamera.transform = transform;
-    depthCamera.sub_image = new message_filters::Subscriber<sensor_msgs::Image>(nh, depth_imageTopic, 100);
-    depthCamera.sub_info = new message_filters::Subscriber<sensor_msgs::CameraInfo>(nh, depth_infoTopic, 100);
+    depthCamera.sub_image = new message_filters::Subscriber<sensor_msgs::Image>(nh, depth_imageTopic, 20);
 
     colorCamera.imageTopic = color_imageTopic;
-    colorCamera.infoTopic = color_infoTopic;
-    colorCamera.transform = transform;
-    colorCamera.sub_image = new message_filters::Subscriber<sensor_msgs::Image>(nh, color_imageTopic, 100);
-    colorCamera.sub_info = new message_filters::Subscriber<sensor_msgs::CameraInfo>(nh, color_infoTopic, 100);
+    colorCamera.sub_image = new message_filters::Subscriber<sensor_msgs::Image>(nh, color_imageTopic, 20);
+
+    poseTopic.poseTopic_name = odometry_topic;
+    poseTopic.sub_pose = new message_filters::Subscriber<geometry_msgs::PoseStamped>(nh, odometry_topic, 20);
+
+    sync_image = new message_filters::Synchronizer<MySyncPolicy_for_image>(MySyncPolicy_for_image(100),
+                                                           *(depthCamera.sub_image),
+                                                           *(colorCamera.sub_image),
+                                                           *(poseTopic.sub_pose));
+    sync_image->registerCallback(boost::bind(&ChiselServer::Callback_image_All, this, _1, _2, _3));
+}
+
+void ChiselServer::Subscribe_pointcloud_All(    const std::string &point_cloud_topic, const std::string &odometry_topic,
+                                                const bool pointcloud_transformed)
+{
+    printf(" subscribe the pointcloud and odometry %s, %s\n", point_cloud_topic.c_str(), odometry_topic.c_str());
+    ChiselServer::pointcloud_transformed = pointcloud_transformed;
+
+    poseTopic.poseTopic_name = odometry_topic;
+    poseTopic.sub_pose = new message_filters::Subscriber<geometry_msgs::PoseStamped>(nh, odometry_topic, 20);
 
     pointcloudTopic.cloudTopic = point_cloud_topic;
     pointcloudTopic.gotCloud = false;
     pointcloudTopic.gotPose = false;
-    pointcloudTopic.sub_point_cloud = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh, point_cloud_topic, 100);
+    pointcloudTopic.sub_point_cloud = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh, point_cloud_topic, 20);
 
-    sync = new message_filters::Synchronizer<MySyncPolicy>(MySyncPolicy(1000),
-                                                           *(depthCamera.sub_image), *(depthCamera.sub_info),
-                                                           *(colorCamera.sub_image), *(colorCamera.sub_info),
-                                                           *(pointcloudTopic.sub_point_cloud));
-    sync->registerCallback(boost::bind(&ChiselServer::CallbackAll, this, _1, _2, _3, _4, _5));
+    sync_pointcloud = new message_filters::Synchronizer<MySyncPolicy_for_pointcloud>(MySyncPolicy_for_pointcloud(40),
+                                                           *(pointcloudTopic.sub_point_cloud),
+                                                           *(poseTopic.sub_pose));
+    sync_pointcloud->registerCallback(boost::bind(&ChiselServer::Callback_pointcloud_All, this, _1, _2));
 }
 
-void ChiselServer::CallbackAll(
-    sensor_msgs::ImageConstPtr depth_image, sensor_msgs::CameraInfoConstPtr depth_info,
-    sensor_msgs::ImageConstPtr color_image, sensor_msgs::CameraInfoConstPtr color_info,
-    sensor_msgs::PointCloud2ConstPtr point_cloud)
+void ChiselServer::Callback_pointcloud_All(sensor_msgs::PointCloud2ConstPtr point_cloud, geometry_msgs::PoseStampedConstPtr msg)
 {
-ROS_INFO("CALLBACK ALL");
-    ColorCameraInfoCallback(color_info);
-    DepthCameraInfoCallback(depth_info);
+    //odometry must have to be processed first!
+    double time_cloud = point_cloud->header.stamp.toSec();
+    double odo_time = msg->header.stamp.toSec();
+    printf("msg received! time diff %f ms.\n", (time_cloud - odo_time) * 1000);
+
+    OdometryCallback(msg);
+
+    PointCloudCallback(point_cloud);
+}
+
+
+void ChiselServer::Callback_image_All(
+    sensor_msgs::ImageConstPtr depth_image,
+    sensor_msgs::ImageConstPtr color_image,
+    geometry_msgs::PoseStampedConstPtr msg)
+{
+    //odometry must have to be processed firsr!
+    OdometryCallback(msg);
 
     ColorImageCallback(color_image);
-    PointCloudCallback(point_cloud);
     DepthImageCallback(depth_image);
 }
+
 
 void ChiselServer::SubscribeDepthImage(const std::string &imageTopic, const std::string &infoTopic, const std::string &transform)
 {
     depthCamera.imageTopic = imageTopic;
-    depthCamera.infoTopic = infoTopic;
-    depthCamera.transform = transform;
+    // depthCamera.infoTopic = infoTopic;
+    // depthCamera.transform = transform;
     depthCamera.imageSubscriber = nh.subscribe(depthCamera.imageTopic, 20, &ChiselServer::DepthImageCallback, this);
-    depthCamera.infoSubscriber = nh.subscribe(depthCamera.infoTopic, 20, &ChiselServer::DepthCameraInfoCallback, this);
+    // depthCamera.infoSubscriber = nh.subscribe(depthCamera.infoTopic, 20, &ChiselServer::DepthCameraInfoCallback, this);
 }
 
 void ChiselServer::DepthCameraInfoCallback(sensor_msgs::CameraInfoConstPtr cameraInfo)
 {
-    SetDepthCameraInfo(cameraInfo);
+    // SetDepthCameraInfo(cameraInfo);
 }
 
 void ChiselServer::SetDepthPose(const Eigen::Affine3f &tf)
@@ -301,32 +353,9 @@ void ChiselServer::DepthImageCallback(sensor_msgs::ImageConstPtr depthImage)
         return;
     SetDepthImage(depthImage);
 
-    bool gotTransform = false;
-    tf::StampedTransform tf;
-
-    int tries = 0;
-    int maxTries = 1;
-
-    while (!gotTransform && tries < maxTries)
-    {
-        tries++;
-        try
-        {
-            transformListener.waitForTransform(depthCamera.transform, baseTransform, depthImage->header.stamp, ros::Duration(0.1));
-            transformListener.lookupTransform(depthCamera.transform, baseTransform, depthImage->header.stamp, tf);
-            depthCamera.gotPose = true;
-            gotTransform = true;
-        }
-        catch (std::exception &e)
-        {
-            ros::Rate lookupRate(0.5f);
-            ROS_WARN("%s\n", e.what());
-        }
-    }
-
-    depthCamera.lastPose = RosTfToChiselTf(tf);
-
     hasNewData = true;
+
+    //process the data
     if (!IsPaused() && HasNewData())
     {
         ROS_INFO("Got data.");
@@ -369,34 +398,34 @@ void ChiselServer::DepthImageCallback(sensor_msgs::ImageConstPtr depthImage)
 
 void ChiselServer::SetColorCameraInfo(const sensor_msgs::CameraInfoConstPtr &info)
 {
-    colorCamera.cameraModel = RosCameraToChiselCamera(info);
-    colorCamera.cameraModel.SetNearPlane(GetNearPlaneDist());
-    colorCamera.cameraModel.SetFarPlane(GetFarPlaneDist());
-    colorCamera.gotInfo = true;
+    // colorCamera.cameraModel = RosCameraToChiselCamera(info);
+    // colorCamera.cameraModel.SetNearPlane(GetNearPlaneDist());
+    // colorCamera.cameraModel.SetFarPlane(GetFarPlaneDist());
+    // colorCamera.gotInfo = true;
 }
 
 void ChiselServer::SetDepthCameraInfo(const sensor_msgs::CameraInfoConstPtr &info)
 {
-    depthCamera.cameraModel = RosCameraToChiselCamera(info);
-    depthCamera.cameraModel.SetNearPlane(GetNearPlaneDist());
-    depthCamera.cameraModel.SetFarPlane(GetFarPlaneDist());
-    depthCamera.gotInfo = true;
+    // depthCamera.cameraModel = RosCameraToChiselCamera(info);
+    // depthCamera.cameraModel.SetNearPlane(GetNearPlaneDist());
+    // depthCamera.cameraModel.SetFarPlane(GetFarPlaneDist());
+    // depthCamera.gotInfo = true;
 }
 
 void ChiselServer::SubscribeColorImage(const std::string &imageTopic, const std::string &infoTopic, const std::string &transform)
 {
     colorCamera.imageTopic = imageTopic;
-    colorCamera.infoTopic = infoTopic;
-    colorCamera.transform = transform;
+    // colorCamera.infoTopic = infoTopic;
+    // colorCamera.transform = transform;
     colorCamera.imageSubscriber = nh.subscribe(colorCamera.imageTopic, 20, &ChiselServer::ColorImageCallback, this);
-    colorCamera.infoSubscriber = nh.subscribe(colorCamera.infoTopic, 20, &ChiselServer::ColorCameraInfoCallback, this);
+    // colorCamera.infoSubscriber = nh.subscribe(colorCamera.infoTopic, 20, &ChiselServer::ColorCameraInfoCallback, this);
 }
 
 void ChiselServer::ColorCameraInfoCallback(sensor_msgs::CameraInfoConstPtr cameraInfo)
 {
-    if (IsPaused())
-        return;
-    SetColorCameraInfo(cameraInfo);
+    // if (IsPaused())
+    //     return;
+    // SetColorCameraInfo(cameraInfo);
 }
 
 void ChiselServer::ColorImageCallback(sensor_msgs::ImageConstPtr colorImage)
@@ -404,31 +433,6 @@ void ChiselServer::ColorImageCallback(sensor_msgs::ImageConstPtr colorImage)
     if (IsPaused())
         return;
     SetColorImage(colorImage);
-
-    bool gotTransform = false;
-    tf::StampedTransform tf;
-
-    int tries = 0;
-    int maxTries = 1;
-
-    while (!gotTransform && tries < maxTries)
-    {
-        tries++;
-        try
-        {
-            transformListener.waitForTransform(colorCamera.transform, baseTransform, colorImage->header.stamp, ros::Duration(0.5));
-            transformListener.lookupTransform(colorCamera.transform, baseTransform, colorImage->header.stamp, tf);
-            colorCamera.gotPose = true;
-            gotTransform = true;
-        }
-        catch (std::exception &e)
-        {
-            ros::Rate lookupRate(0.5f);
-            ROS_WARN("%s\n", e.what());
-        }
-    }
-
-    colorCamera.lastPose = RosTfToChiselTf(tf);
 }
 
 void ChiselServer::SubscribePointCloud(const std::string &topic)
@@ -436,7 +440,7 @@ void ChiselServer::SubscribePointCloud(const std::string &topic)
     pointcloudTopic.cloudTopic = topic;
     pointcloudTopic.gotCloud = false;
     pointcloudTopic.gotPose = false;
-    pointcloudTopic.cloudSubscriber = nh.subscribe(pointcloudTopic.cloudTopic, 20, &ChiselServer::PointCloudCallback, this);
+    pointcloudTopic.cloudSubscriber = nh.subscribe(pointcloudTopic.cloudTopic, 1300, &ChiselServer::PointCloudCallback, this);
 }
 
 void ChiselServer::PointCloudCallback(sensor_msgs::PointCloud2ConstPtr pointcloud)
@@ -448,66 +452,119 @@ void ChiselServer::PointCloudCallback(sensor_msgs::PointCloud2ConstPtr pointclou
     {
         lastPointCloud.reset(new chisel::PointCloud());
     }
-    ROSPointCloudToChisel(pointcloud, lastPointCloud.get());
+
+    if(pointcloud_transformed)
+        ROSPointCloudToChisel_with_inverse_trans(pointcloud, lastPointCloud.get(), pointcloudTopic.lastPose, cloud_certianity);
+    else
+        ROSPointCloudToChisel(pointcloud, lastPointCloud.get());
+
     pointcloudTopic.transform = pointcloud->header.frame_id;
-    bool gotTransform = false;
-    tf::StampedTransform tf;
-
-    int tries = 0;
-    int maxTries = 1;
-
-    while (!gotTransform && tries < maxTries)
-    {
-        tries++;
-        try
-        {
-            transformListener.waitForTransform(pointcloudTopic.transform, baseTransform, pointcloud->header.stamp, ros::Duration(0.5));
-            transformListener.lookupTransform(pointcloudTopic.transform, baseTransform, pointcloud->header.stamp, tf);
-            pointcloudTopic.gotPose = true;
-            gotTransform = true;
-        }
-        catch (std::exception &e)
-        {
-            ros::Rate lookupRate(0.5f);
-            ROS_WARN("%s\n", e.what());
-        }
-    }
-
-    pointcloudTopic.lastPose = RosTfToChiselTf(tf);
-    pointcloudTopic.lastTimestamp = pointcloud->header.stamp;
+    
     hasNewData = true;
+
+    //process new data
+    if (!IsPaused() && HasNewData())
+    {
+        ROS_INFO("Got data.");
+        auto start = std::chrono::system_clock::now();
+        switch (GetMode())
+        {
+        case chisel_ros::ChiselServer::FusionMode::DepthImage:
+            IntegrateLastDepthImage();
+            break;
+        case chisel_ros::ChiselServer::FusionMode::PointCloud:
+            IntegrateLastPointCloud();
+            break;
+        }
+        std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - start;
+        ROS_INFO("CHISEL: Done with scan, %f ms", elapsed.count() * 1000);
+
+        PublishChunkBoxes();
+        if (chiselMap->GetMeshesToUpdate().size() == 0)
+        {
+            auto start = std::chrono::system_clock::now();
+            PublishMeshes();
+            std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - start;
+            ROS_INFO("CHISEL: Done with publish, %f ms", elapsed.count() * 1000);
+        }
+
+        if (mode == chisel_ros::ChiselServer::FusionMode::DepthImage)
+        {
+            PublishDepthPose();
+            PublishDepthFrustum();
+
+            if (useColor)
+            {
+                PublishColorPose();
+                PublishColorFrustum();
+            }
+        }
+        puts("");
+    }
+}
+
+void ChiselServer::OdometryCallback(const geometry_msgs::PoseStampedConstPtr msg)
+{
+    Eigen::Quaternionf quater;
+    Eigen::Affine3f Transform(Eigen::Affine3f::Identity());
+
+    quater.w() = msg->pose.orientation.w;
+    quater.x() = msg->pose.orientation.x;
+    quater.y() = msg->pose.orientation.y;
+    quater.z() = msg->pose.orientation.z;
+
+    Transform.linear() = quater.toRotationMatrix();
+    Transform.translation()(0) = msg->pose.position.x;
+    Transform.translation()(1) = msg->pose.position.y;
+    Transform.translation()(2) = msg->pose.position.z;
+
+    ros::Time Time_update = msg->header.stamp;
+
+    pointcloudTopic.lastPose = Transform;
+    pointcloudTopic.gotPose = true;
+    pointcloudTopic.lastTimestamp = msg->header.stamp;
+
+    depthCamera.lastPose = Transform;
+    depthCamera.gotPose = true;
+    depthCamera.lastImageTimestamp = msg->header.stamp;
+
+    colorCamera.lastPose = Transform;
+    colorCamera.gotPose = true;
+    colorCamera.lastImageTimestamp = msg->header.stamp;
+
+    CameraPose = Transform;
 }
 
 void ChiselServer::SetupProjectionIntegrator(chisel::TruncatorPtr truncator, uint16_t weight, bool useCarving, float carvingDist)
 {
     projectionIntegrator.SetCentroids(GetChiselMap()->GetChunkManager().GetCentroids());
     projectionIntegrator.SetTruncator(truncator);
-    projectionIntegrator.SetWeighter(chisel::WeighterPtr(new chisel::ConstantWeighter(weight)));
+    projectionIntegrator.SetWeighter(chisel::WeighterPtr(new chisel::ProbabilisticWeighter()));
     projectionIntegrator.SetCarvingDist(carvingDist);
     projectionIntegrator.SetCarvingEnabled(useCarving);
 }
 
 void ChiselServer::IntegrateLastDepthImage()
 {
-    if (!IsPaused() && depthCamera.gotInfo && depthCamera.gotPose && lastDepthImage.get())
+    if (!IsPaused() && depthCamera.gotPose && lastDepthImage.get())
     {
-        ROS_INFO("CHISEL: Integrating depth scan");
+        ROS_INFO("CHISEL: Integrating depth scan"); 
         auto start = std::chrono::system_clock::now();
         if (useColor)
         {
-            chiselMap->IntegrateDepthScanColor<DepthData, ColorData>(projectionIntegrator, lastDepthImage, depthCamera.lastPose, depthCamera.cameraModel, lastColorImage, colorCamera.lastPose, colorCamera.cameraModel);
+            chiselMap->IntegrateDepthScanColor<DepthData, ColorData>(projectionIntegrator, lastDepthImage, lastColorImage, CameraPose, general_camera);
         }
         else
         {
-            chiselMap->IntegrateDepthScan<DepthData>(projectionIntegrator, lastDepthImage, depthCamera.lastPose, depthCamera.cameraModel);
+            chiselMap->IntegrateDepthScan<DepthData>(projectionIntegrator, lastDepthImage, CameraPose, general_camera);
         }
         std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - start;
-        ROS_INFO("CHISEL: Done with scan, %f ms", elapsed.count() * 1000);
+        // ROS_INFO("CHISEL: Done with scan, %f ms", elapsed.count() * 1000);
         PublishLatestChunkBoxes();
         PublishDepthFrustum();
 
         start = std::chrono::system_clock::now();
-        ROS_INFO("CHISEL: Updating meshes");
+        // ROS_INFO("CHISEL: Updating meshes");
         chiselMap->UpdateMeshes();
 
         elapsed = std::chrono::system_clock::now() - start;
@@ -521,10 +578,19 @@ void ChiselServer::IntegrateLastPointCloud()
     if (!IsPaused() && pointcloudTopic.gotPose && lastPointCloud.get())
     {
         ROS_INFO("Integrating point cloud");
-        chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, farPlaneDist);
-        PublishLatestChunkBoxes();
+        chiselMap->IntegratePointCloud(
+            projectionIntegrator,
+            *lastPointCloud,
+            pointcloudTopic.lastPose,
+            farPlaneDist,
+            cloud_certianity);
+        //PublishLatestChunkBoxes();
         chiselMap->UpdateMeshes();
         hasNewData = false;
+    }
+    else
+    {
+        std::cout << "system Integrate Last PointCloud Resist " << std::endl;
     }
 }
 
@@ -535,7 +601,7 @@ void ChiselServer::PublishLatestChunkBoxes()
     const chisel::ChunkManager &chunkManager = chiselMap->GetChunkManager();
     visualization_msgs::Marker marker;
     marker.header.stamp = ros::Time::now();
-    marker.header.frame_id = baseTransform;
+    marker.header.frame_id = "world";
     marker.ns = "chunk_box";
     marker.type = visualization_msgs::Marker::CUBE_LIST;
     marker.scale.x = chunkManager.GetChunkSize()(0) * chunkManager.GetResolution();
@@ -575,7 +641,7 @@ void ChiselServer::PublishChunkBoxes()
     const chisel::ChunkManager &chunkManager = chiselMap->GetChunkManager();
     visualization_msgs::Marker marker;
     marker.header.stamp = ros::Time::now();
-    marker.header.frame_id = baseTransform;
+    marker.header.frame_id = "world";
     marker.ns = "chunk_box";
     marker.type = visualization_msgs::Marker::CUBE_LIST;
     marker.scale.x = chunkManager.GetChunkSize()(0) * chunkManager.GetResolution();
@@ -616,7 +682,7 @@ void ChiselServer::FillMarkerTopicWithMeshes(visualization_msgs::Marker *marker,
     assert(marker != nullptr);
     assert(marker2 != nullptr);
     marker2->header.stamp = ros::Time::now();
-    marker2->header.frame_id = baseTransform;
+    marker2->header.frame_id = "world";
     marker2->ns = "grid";
     marker2->type = visualization_msgs::Marker::CUBE_LIST;
     marker2->scale.x = chiselMap->GetChunkManager().GetResolution();
@@ -632,7 +698,7 @@ void ChiselServer::FillMarkerTopicWithMeshes(visualization_msgs::Marker *marker,
     marker2->color.a = 1.0;
 
     marker->header.stamp = ros::Time::now();
-    marker->header.frame_id = baseTransform;
+    marker->header.frame_id = "world";
     marker->ns = "mesh";
     marker->scale.x = 1;
     marker->scale.y = 1;
@@ -716,13 +782,35 @@ void ChiselServer::FillMarkerTopicWithMeshes(visualization_msgs::Marker *marker,
     }
 }
 
-bool ChiselServer::SaveMesh(chisel_ros::SaveMeshService::Request &request, chisel_ros::SaveMeshService::Response &response)
+bool ChiselServer::SaveMesh(chisel_msgs::SaveMeshService::Request &request, chisel_msgs::SaveMeshService::Response &response)
 {
     bool saveSuccess = chiselMap->SaveAllMeshesToPLY(request.file_name);
     return saveSuccess;
 }
 
-bool ChiselServer::GetAllChunks(chisel_ros::GetAllChunksService::Request &request, chisel_ros::GetAllChunksService::Response &response)
+bool ChiselServer::Update_all_mesh(chisel_msgs::UpdateAllMeshService::Request &request, chisel_msgs::UpdateAllMeshService::Response &response)
+{
+    const chisel::ChunkManager &chunkManager = chiselMap->GetChunkManager();
+    chisel::ChunkSet this_meshes;
+    for (const std::pair<chisel::ChunkID, chisel::ChunkPtr> &pair : chunkManager.GetChunks())
+    {
+        //if(pair.second != NULL)
+                this_meshes[pair.first] = true;
+    }
+    chiselMap->UpdateAllMesh(this_meshes);
+    PublishChunkBoxes();
+    ROS_INFO("update all mesh success! \n");
+    if (chiselMap->GetMeshesToUpdate().size() == 0)
+    {
+        auto start = std::chrono::system_clock::now();
+        PublishMeshes();
+        std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - start;
+        ROS_INFO("CHISEL: Done with publish, %f ms", elapsed.count() * 1000);
+    }
+    return true;
+}
+
+bool ChiselServer::GetAllChunks(chisel_msgs::GetAllChunksService::Request &request, chisel_msgs::GetAllChunksService::Response &response)
 {
     const chisel::ChunkMap &chunkmap = chiselMap->GetChunkManager().GetChunks();
     response.chunks.chunks.resize(chunkmap.size());
@@ -730,7 +818,7 @@ bool ChiselServer::GetAllChunks(chisel_ros::GetAllChunksService::Request &reques
     size_t i = 0;
     for (const std::pair<chisel::ChunkID, chisel::ChunkPtr> &chunkPair : chiselMap->GetChunkManager().GetChunks())
     {
-        chisel_ros::ChunkMessage &msg = response.chunks.chunks.at(i);
+        chisel_msgs::ChunkMessage &msg = response.chunks.chunks.at(i);
         FillChunkMessage(chunkPair.second, &msg);
         i++;
     }

@@ -69,19 +69,29 @@ void Raycast(const Vec3& start, const Vec3& end, const Point3& min, const Point3
     int stepX = signum(dx);
     int stepY = signum(dy);
     int stepZ = signum(dz);
+
+    // Avoids an infinite loop.
+    if (stepX == 0 && stepY == 0 && stepZ == 0)
+    {
+        return;
+    }
+
     // See description above. The initial values depend on the fractional
     // part of the origin.
-    float tMaxX = intbound(start.x(), dx);
-    float tMaxY = intbound(start.y(), dy);
-    float tMaxZ = intbound(start.z(), dz);
+    // float tMaxX = intbound(start.x(), dx);
+    // float tMaxY = intbound(start.y(), dy);
+    // float tMaxZ = intbound(start.z(), dz);
+
+    float tMaxX = intbound(x, dx);
+    float tMaxY = intbound(y, dy);
+    float tMaxZ = intbound(z, dz);
+
     // The change in t when taking a step (always positive).
     float tDeltaX = ((float)stepX) / dx;
     float tDeltaY = ((float)stepY) / dy;
     float tDeltaZ = ((float)stepZ) / dz;
 
-    // Avoids an infinite loop.
-    if (stepX == 0 && stepY == 0 && stepZ == 0)
-        return;
+
 
     while (true)
     {
@@ -90,7 +100,8 @@ void Raycast(const Vec3& start, const Vec3& end, const Point3& min, const Point3
            z >= min.z() && z < max.z())
             output->push_back(Point3(x, y, z));
 
-        if(x == endX && y == endY && z == endZ) break;
+        if(x == endX && y == endY && z == endZ)
+            break;
 
         // tMaxX stores the t-value at which we cross a cube boundary along the
         // X axis, and similarly for Y and Z. Therefore, choosing the least tMax

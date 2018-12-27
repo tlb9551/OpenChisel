@@ -2,11 +2,11 @@
     <!-- The chisel server node-->
     <node name="Chisel" pkg="chisel_ros" type="ChiselNode" output="screen"> 
         <!-- Size of the TSDF chunks in number of voxels -->
-        <param name="chunk_size_x" value="10"/>
-        <param name="chunk_size_y" value="10"/>
-        <param name="chunk_size_z" value="10"/>
+        <param name="chunk_size_x" value="8"/>
+        <param name="chunk_size_y" value="8"/>
+        <param name="chunk_size_z" value="8"/>
         <!--- The distance away from the surface (in cm) we are willing to reconstuct -->
-        <param name="truncation_scale" value="0.5"/>
+        <param name="truncation_scale" value="1.0"/>
         <!-- Whether to use voxel carving. If set to true, space near the sensor will be
              carved away, allowing for moving objects and other inconsistencies to disappear -->
         <param name="use_voxel_carving" value="true"/>
@@ -19,32 +19,27 @@
         <param name="voxel_resolution_m" value="0.1"/>
         <!-- The maximum distance (in meters) that will be constructed. Use lower values
              for close-up reconstructions and to save on memory. -->
-        <param name="far_plane_dist" value="6"/>
+        <param name="far_plane_dist" value="3"/>
         <!-- Mode to use for reconstruction. There are two modes: DepthImage and PointCloud.
              Only use PointCloud if no depth image is available. It is *much* slower-->
         <param name="fusion_mode" value="DepthImage"/>
 
         <!-- camera type, Pinhole or Fisheye-->
-        <param name="camera_type" value= "Pinhole"/>
+        <param name="camera_type" value= "Fisheye"/>
         <!-- basic information for images-->
-        <param name="image_width" value="752"/>
-        <param name="image_height" value="480"/>
+        <param name="image_width" value="720"/>
+        <param name="image_height" value="720"/>
         <!-- Pinhole Parameter, if not pinhole can be ignored-->
-        <param name="fx" value="458.654"/>
-        <param name="cx" value="367.215"/>
-        <param name="fy" value="457.296"/>
-        <param name="cy" value="248.375"/>
+        <!-- <param name="fx" value="367.612580"/> -->
+        <!-- <param name="fy" value="369.042951"/> -->
+        <!-- <param name="cx" value="369.042951"/> -->
+        <!-- <param name="cy" value="236.542114"/> -->
         <!-- Fisheye Parameter, steps a degree, if not can be ignored-->
-        <!-- <param name="degree_step" value="4"/> -->
+        <param name="degree_step" value="4"/>
 
         <!-- Name of the topic -->
-<!--    <param name="Depthimage_topic" value="/remode/depth"/>
+        <param name="Depthimage_topic" value="/remode/depth"/>
         <param name="Colorimage_topic" value="/remode/reference"/>
-        <param name="Odometry_topic" value="/vins_estimator/cur_pose"/> -->
-
-        <param name="Depthimage_topic" value="/euroc_node/depth"/>
-        <param name="Colorimage_topic" value="/euroc_node/colordepth"/>
-        <param name="Odometry_topic" value="/euroc_node/pose"/>
-
+        <param name="Odometry_topic" value="/vins_estimator/cur_pose"/>
     </node>
 </launch>

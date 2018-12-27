@@ -25,6 +25,8 @@
 #include <pcl/common/common.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
+#include <pcl/common/transforms.h>
+#include <pcl/filters/voxel_grid.h>
 #include <Eigen/Geometry>
 #include <open_chisel/geometry/Geometry.h>
 #include <open_chisel/camera/DepthImage.h>
@@ -39,18 +41,20 @@
 
 namespace chisel_ros
 {
-void PclPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZ> &cloudIn, chisel::PointCloud *cloudOut)
+void PclPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZI> &cloudIn, chisel::PointCloud *cloudOut, std::vector<float> &certainity)
 {
     assert(!!cloudOut);
     cloudOut->GetMutablePoints().resize(cloudIn.points.size());
-
+    certainity.clear();
+    certainity.reserve(cloudIn.points.size());
     size_t i = 0;
-    for (const pcl::PointXYZ &pt : cloudIn.points)
+    for (const pcl::PointXYZI &pt : cloudIn.points)
     {
         chisel::Vec3 &xyz = cloudOut->GetMutablePoints().at(i);
         xyz(0) = pt.x;
         xyz(1) = pt.y;
         xyz(2) = pt.z;
+        certainity.push_back(pt.intensity);
         i++;
     }
 }
@@ -60,7 +64,6 @@ void PclColorPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZRGB> &cloudIn
     assert(!!cloudOut);
     cloudOut->GetMutablePoints().resize(cloudIn.points.size());
     cloudOut->GetMutableColors().resize(cloudIn.points.size());
-
     size_t i = 0;
     float byteToFloat = 1.0f / 255.0f;
     for (const pcl::PointXYZRGB &pt : cloudIn.points)
@@ -80,29 +83,81 @@ void PclColorPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZRGB> &cloudIn
 
 void ROSPointCloudToChisel(sensor_msgs::PointCloud2ConstPtr cloudIn, chisel::PointCloud *cloudOut)
 {
+    // assert(!!cloudOut);
+
+    // if (sensor_msgs::getPointCloud2FieldIndex(*cloudIn, "rgb") == -1)
+    // {
+    //     //Got uncolored pointcloud
+    //     pcl::PointCloud<pcl::PointXYZI> pclCloud;
+    //     pcl::fromROSMsg(*cloudIn, pclCloud);
+    //     //remove NAN points from the cloud
+    //     std::vector<int> indices;
+    //     pcl::removeNaNFromPointCloud(pclCloud, pclCloud, indices);
+    //     PclPointCloudToChisel(pclCloud, cloudOut);
+    //     printf("format changed size : ", pclCloud.size());
+    // }
+    // else
+    // {
+    //     //Got colored pointcloud
+    //     pcl::PointCloud<pcl::PointXYZRGB> pclCloud;
+    //     pcl::fromROSMsg(*cloudIn, pclCloud);
+    //     //remove NAN points from the cloud
+    //     std::vector<int> indices;
+    //     pcl::removeNaNFromPointCloud(pclCloud, pclCloud, indices);
+    //     PclColorPointCloudToChisel(pclCloud, cloudOut);
+    // }
+}
+
+//??? wang: this is used to transform the pointcloud back into the camera/ladar frame
+void ROSPointCloudToChisel_with_inverse_trans(
+    sensor_msgs::PointCloud2ConstPtr cloudIn,
+    chisel::PointCloud *cloudOut,
+    chisel::Transform transform,
+    std::vector<float> &certainity)
+{
     assert(!!cloudOut);
 
     if (sensor_msgs::getPointCloud2FieldIndex(*cloudIn, "rgb") == -1)
     {
         //Got uncolored pointcloud
-        pcl::PointCloud<pcl::PointXYZ> pclCloud;
-        pcl::fromROSMsg(*cloudIn, pclCloud);
+        pcl::PointCloud<pcl::PointXYZI>::Ptr pclCloud(new pcl::PointCloud<pcl::PointXYZI>());
+        pcl::PointCloud<pcl::PointXYZI>::Ptr pclCloud_out(new  pcl::PointCloud<pcl::PointXYZI>());
+        pcl::fromROSMsg(*cloudIn, *pclCloud);
+
+        //filter 
+        pcl::VoxelGrid<pcl::PointXYZI> sor;
+        sor.setInputCloud (pclCloud);
+        sor.setLeafSize (0.1f, 0.1f, 0.1f);
+        sor.setMinimumPointsNumberPerVoxel(10);
+        sor.filter (*pclCloud_out);
+
+        //transform back into camera/ladar frame
+        pcl::PointCloud<pcl::PointXYZI> pclCloud_transformed;
+        pcl::transformPointCloud(*pclCloud_out, pclCloud_transformed, transform.inverse());
+
         //remove NAN points from the cloud
         std::vector<int> indices;
-        pcl::removeNaNFromPointCloud(pclCloud, pclCloud, indices);
-        PclPointCloudToChisel(pclCloud, cloudOut);
+        pcl::removeNaNFromPointCloud(pclCloud_transformed, pclCloud_transformed, indices);
+        PclPointCloudToChisel(pclCloud_transformed, cloudOut, certainity);
+        printf("format changed size : %d.\n", pclCloud_out->size());
     }
     else
     {
         //Got colored pointcloud
         pcl::PointCloud<pcl::PointXYZRGB> pclCloud;
         pcl::fromROSMsg(*cloudIn, pclCloud);
+
+        //transform back into camera/ladar frame
+        pcl::PointCloud<pcl::PointXYZRGB> pclCloud_transformed;
+        pcl::transformPointCloud(pclCloud, pclCloud_transformed, transform.inverse());
+
         //remove NAN points from the cloud
         std::vector<int> indices;
-        pcl::removeNaNFromPointCloud(pclCloud, pclCloud, indices);
-        PclColorPointCloudToChisel(pclCloud, cloudOut);
+        pcl::removeNaNFromPointCloud(pclCloud_transformed, pclCloud_transformed, indices);
+        PclColorPointCloudToChisel(pclCloud_transformed, cloudOut);
     }
 }
+
 
 template <class DataType>
 void ROSImgToDepthImg(sensor_msgs::ImageConstPtr image, chisel::DepthImage<DataType> *depthImage)

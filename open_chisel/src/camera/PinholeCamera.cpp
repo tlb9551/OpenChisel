@@ -55,7 +55,7 @@ namespace chisel
     void PinholeCamera::SetupFrustum(const Transform& view, Frustum* frustum) const
     {
         assert(frustum != nullptr);
-        frustum->SetFromParams(view, nearPlane, farPlane, intrinsics.GetFy(), intrinsics.GetFy(), intrinsics.GetCx(), intrinsics.GetCy(), width, height);
+        frustum->SetFromParams(view, nearPlane, farPlane, intrinsics.GetFx(), intrinsics.GetFy(), intrinsics.GetCx(), intrinsics.GetCy(), width, height);
     }
 
     bool PinholeCamera::IsPointOnImage(const Vec3& point) const

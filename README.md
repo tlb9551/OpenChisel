@@ -1,6 +1,10 @@
 OpenChisel
 ==========
 
+This is a modified OpenChisel for depth maps fusion with known camera intrinsic and extrinsic parameters. You can use is to fuse the ouput from [open_quadtree_tree](https://github.com/HKUST-Aerial-Robotics/open_quadtree_mapping) or [Pinhole-Fisheye-Mapping](https://github.com/HKUST-Aerial-Robotics/Pinhole-Fisheye-Mapping). Please see the launch files in `chisel_ros/launch` for more information. Very few technical support will be provided due to my limitted time.
+
+==========
+
 An open-source version of the Chisel chunked TSDF library. It contains two packages:
 
 ##open_chisel

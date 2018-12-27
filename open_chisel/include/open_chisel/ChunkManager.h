@@ -42,7 +42,7 @@ struct ChunkHasher
     // Three large primes are used for spatial hashing.
     static constexpr size_t p1 = 73856093;
     static constexpr size_t p2 = 19349663;
-    static constexpr size_t p3 = 8349279;
+    static constexpr size_t p3 = 83492791;
 
     std::size_t operator()(const ChunkID &key) const
     {
@@ -51,6 +51,8 @@ struct ChunkHasher
 };
 
 typedef std::unordered_map<ChunkID, ChunkPtr, ChunkHasher> ChunkMap;
+typedef std::unordered_map<ChunkID, PointCloud, ChunkHasher> Chunk_point_Map;
+typedef std::unordered_map<ChunkID, std::vector<int>, ChunkHasher> Chunk_pointindex_Map;
 typedef std::unordered_map<ChunkID, bool, ChunkHasher> ChunkSet;
 typedef std::unordered_map<ChunkID, MeshPtr, ChunkHasher> MeshMap;
 class Frustum;
@@ -149,7 +151,10 @@ class ChunkManager
 
     void GetChunkIDsIntersecting(const AABB &box, ChunkIDList *chunkList);
     void GetChunkIDsIntersecting(const Frustum &frustum, ChunkIDList *chunkList);
-    void GetChunkIDsIntersecting(const PointCloud &cloud, const Transform &cameraTransform, float truncation, float maxDist, ChunkIDList *chunkList);
+    void GetChunkIDsIntersecting(   const PointCloud &cloud, const Transform &cameraTransform, const std::vector<float> &certianity, 
+                                    float maxDist, ChunkIDList *chunkList, Chunk_point_Map *each_point_chunklist);
+    void GetChunkIDsIntersecting(   const PointCloud &cloud, const Transform &cameraTransform, const std::vector<float> &certianity,
+                                    float maxDist, ChunkIDList *chunkList, Chunk_pointindex_Map &chunk_pointindex_list);
     ChunkMap::iterator CreateChunk(const ChunkID &id);
 
     void GenerateMesh(const ChunkPtr &chunk, Mesh *mesh);
@@ -188,6 +193,10 @@ class ChunkManager
 
     void RecomputeMesh(const ChunkID &chunkID, std::mutex &mutex);
     void RecomputeMeshes(const ChunkSet &chunks);
+    void ClearMeshes()
+    {
+        allMeshes.clear();
+    }
     void ComputeNormalsFromGradients(Mesh *mesh);
 
     inline const Eigen::Vector3i &GetChunkSize() const
