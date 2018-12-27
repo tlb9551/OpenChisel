@@ -50,7 +50,7 @@ int main(int argc, char **argv)
     chisel_ros::ChiselServer::FusionMode mode;
     std::string modeString;
     std::string pointCloudTopic;
-
+    
     nh.param("chunk_size_x", chunkSizeX, 32);
     nh.param("chunk_size_y", chunkSizeY, 32);
     nh.param("chunk_size_z", chunkSizeZ, 32);
