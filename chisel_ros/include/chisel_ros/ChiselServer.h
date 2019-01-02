@@ -102,7 +102,7 @@ class ChiselServer
     struct RosPoseStampedTopic
     {
         std::string poseTopic_name;
-        message_filters::Subscriber<geometry_msgs::PoseStamped> *sub_pose;
+        message_filters::Subscriber<nav_msgs::Odometry> *sub_pose;
     };
 
     ChiselServer();
@@ -151,7 +151,7 @@ class ChiselServer
     void ColorCameraInfoCallback(sensor_msgs::CameraInfoConstPtr cameraInfo);
     void ColorImageCallback(sensor_msgs::ImageConstPtr colorImage);
 
-    void OdometryCallback(const geometry_msgs::PoseStampedConstPtr msg);
+    void OdometryCallback(const nav_msgs::OdometryConstPtr msg);
 
     void Subscribe_image_All(
         const std::string &depth_imageTopic,
@@ -160,11 +160,11 @@ class ChiselServer
     void Callback_image_All(
         sensor_msgs::ImageConstPtr depth_image,
         sensor_msgs::ImageConstPtr color_image,
-        geometry_msgs::PoseStampedConstPtr msg);
+        nav_msgs::OdometryConstPtr msg);
 
     void Subscribe_pointcloud_All(  const std::string &point_cloud_topic, const std::string &odometry_topic,
                                     const bool pointcloud_transformed);
-    void Callback_pointcloud_All(   sensor_msgs::PointCloud2ConstPtr point_cloud, geometry_msgs::PoseStampedConstPtr msg);
+    void Callback_pointcloud_All(   sensor_msgs::PointCloud2ConstPtr point_cloud, nav_msgs::OdometryConstPtr msg);
 
     void SubscribePointCloud(const std::string &topic);
     void PointCloudCallback(sensor_msgs::PointCloud2ConstPtr pointcloud);
@@ -247,10 +247,10 @@ class ChiselServer
 
     ros::NodeHandle nh;
 
-    typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, geometry_msgs::PoseStamped> MySyncPolicy_for_image;
+    typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, nav_msgs::Odometry> MySyncPolicy_for_image;
     message_filters::Synchronizer<MySyncPolicy_for_image> *sync_image;
 
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, geometry_msgs::PoseStamped> MySyncPolicy_for_pointcloud;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, nav_msgs::Odometry> MySyncPolicy_for_pointcloud;
     message_filters::Synchronizer<MySyncPolicy_for_pointcloud> *sync_pointcloud;
 
     chisel::ChiselPtr chiselMap;

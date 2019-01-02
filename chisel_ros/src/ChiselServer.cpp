@@ -241,7 +241,7 @@ void ChiselServer::Subscribe_image_All(
     colorCamera.sub_image = new message_filters::Subscriber<sensor_msgs::Image>(nh, color_imageTopic, 20);
 
     poseTopic.poseTopic_name = odometry_topic;
-    poseTopic.sub_pose = new message_filters::Subscriber<geometry_msgs::PoseStamped>(nh, odometry_topic, 20);
+    poseTopic.sub_pose = new message_filters::Subscriber<nav_msgs::Odometry>(nh, odometry_topic, 20);
 
     sync_image = new message_filters::Synchronizer<MySyncPolicy_for_image>(MySyncPolicy_for_image(100),
                                                            *(depthCamera.sub_image),
@@ -257,7 +257,7 @@ void ChiselServer::Subscribe_pointcloud_All(    const std::string &point_cloud_t
     ChiselServer::pointcloud_transformed = pointcloud_transformed;
 
     poseTopic.poseTopic_name = odometry_topic;
-    poseTopic.sub_pose = new message_filters::Subscriber<geometry_msgs::PoseStamped>(nh, odometry_topic, 20);
+    poseTopic.sub_pose = new message_filters::Subscriber<nav_msgs::Odometry>(nh, odometry_topic, 20);
 
     pointcloudTopic.cloudTopic = point_cloud_topic;
     pointcloudTopic.gotCloud = false;
@@ -270,7 +270,7 @@ void ChiselServer::Subscribe_pointcloud_All(    const std::string &point_cloud_t
     sync_pointcloud->registerCallback(boost::bind(&ChiselServer::Callback_pointcloud_All, this, _1, _2));
 }
 
-void ChiselServer::Callback_pointcloud_All(sensor_msgs::PointCloud2ConstPtr point_cloud, geometry_msgs::PoseStampedConstPtr msg)
+void ChiselServer::Callback_pointcloud_All(sensor_msgs::PointCloud2ConstPtr point_cloud, nav_msgs::OdometryConstPtr msg)
 {
     //odometry must have to be processed first!
     double time_cloud = point_cloud->header.stamp.toSec();
@@ -286,7 +286,7 @@ void ChiselServer::Callback_pointcloud_All(sensor_msgs::PointCloud2ConstPtr poin
 void ChiselServer::Callback_image_All(
     sensor_msgs::ImageConstPtr depth_image,
     sensor_msgs::ImageConstPtr color_image,
-    geometry_msgs::PoseStampedConstPtr msg)
+    nav_msgs::OdometryConstPtr msg)
 {
     //odometry must have to be processed firsr!
     OdometryCallback(msg);
@@ -503,20 +503,20 @@ void ChiselServer::PointCloudCallback(sensor_msgs::PointCloud2ConstPtr pointclou
     }
 }
 
-void ChiselServer::OdometryCallback(const geometry_msgs::PoseStampedConstPtr msg)
+void ChiselServer::OdometryCallback(const nav_msgs::OdometryConstPtr msg)
 {
     Eigen::Quaternionf quater;
     Eigen::Affine3f Transform(Eigen::Affine3f::Identity());
 
-    quater.w() = msg->pose.orientation.w;
-    quater.x() = msg->pose.orientation.x;
-    quater.y() = msg->pose.orientation.y;
-    quater.z() = msg->pose.orientation.z;
+    quater.w() = msg->pose.pose.orientation.w;
+    quater.x() = msg->pose.pose.orientation.x;
+    quater.y() = msg->pose.pose.orientation.y;
+    quater.z() = msg->pose.pose.orientation.z;
 
     Transform.linear() = quater.toRotationMatrix();
-    Transform.translation()(0) = msg->pose.position.x;
-    Transform.translation()(1) = msg->pose.position.y;
-    Transform.translation()(2) = msg->pose.position.z;
+    Transform.translation()(0) = msg->pose.pose.position.x;
+    Transform.translation()(1) = msg->pose.pose.position.y;
+    Transform.translation()(2) = msg->pose.pose.position.z;
 
     ros::Time Time_update = msg->header.stamp;
 
