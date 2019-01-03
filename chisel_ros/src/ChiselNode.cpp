@@ -186,7 +186,6 @@ int main(int argc, char **argv)
     // server->SetupColorFrustumPublisher("last_color_frustum");
 
     server->AdvertiseServices();
-
     server->SetBaseTransform(baseTransform);
     server->SetupMeshPublisher(meshTopic);
     server->SetupChunkBoxPublisher(chunkBoxTopic);

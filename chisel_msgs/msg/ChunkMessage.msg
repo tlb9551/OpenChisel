@@ -19,7 +19,7 @@ int32 num_voxels_y
 int32 num_voxels_z
 
 #Binary serialization of distances/weights
-uint32[] distance_data
+uint64[] distance_data
 
 #Binary serialization of colors/weights
 uint32[] color_data

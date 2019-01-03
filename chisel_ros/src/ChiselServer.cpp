@@ -246,6 +246,15 @@ void ChiselServer::PublishLocalChunks()
                 if(has_chunks)
                 {
                     chisel_ros::FillChunkMessage(tmp, &msg);
+                } else{
+                    msg.ID_x = origin_id(0) + i - localChunksSize_x / 2;
+                    msg.ID_y = origin_id(1) + j - localChunksSize_y / 2;
+                    msg.ID_z = origin_id(2) + k - localChunksSize_z / 2;
+
+                    msg.resolution_meters = chiselMap->GetChunkManager().GetResolution();
+                    msg.num_voxels_x = localChunksSize_x;
+                    msg.num_voxels_y = localChunksSize_y;
+                    msg.num_voxels_z = localChunksSize_z;
                 }
                 count++;
             }

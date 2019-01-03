@@ -60,24 +60,30 @@ namespace chisel_ros
         {
             float sdf = voxel.GetSDF();
             float weight = voxel.GetWeight();
-            message->distance_data.push_back
-            (
-                    *(reinterpret_cast<uint32_t*>(&sdf))
-                  | *(reinterpret_cast<uint32_t*>(&weight)) << sizeof(uint32_t)
-            );
+            uint64_t distance_data_sdf;
+            distance_data_sdf=*(reinterpret_cast<uint32_t*>(&sdf));
+            distance_data_sdf<<=32;
+            uint64_t distance_data_weight;
+            distance_data_weight=*(reinterpret_cast<uint32_t*>(&weight));
+
+            message->distance_data.push_back(distance_data_sdf | distance_data_weight);
         }
 
         const std::vector<chisel::ColorVoxel>& colors = chunk->GetColorVoxels();
 
         for (const chisel::ColorVoxel& voxel : colors)
         {
+            uint32_t color_data_red,color_data_green,color_data_blue,color_data_weight;
+            color_data_red   =voxel.GetRed();
+            color_data_green =voxel.GetBlue();
+            color_data_blue  =voxel.GetGreen();
+            color_data_weight=voxel.GetWeight();
             message->color_data.push_back
             (
-                      static_cast<uint32_t>(voxel.GetRed())
-                    | static_cast<uint32_t>(voxel.GetBlue())   << sizeof(uint8_t)
-                    | static_cast<uint32_t>(voxel.GetGreen())  << 2 * sizeof(uint8_t)
-                    | static_cast<uint32_t>(voxel.GetBlue())   << 3 * sizeof(uint8_t)
-                    | static_cast<uint32_t>(voxel.GetWeight()) << 4 * sizeof(uint8_t)
+                    color_data_weight
+                    | color_data_green   << 8
+                    | color_data_green  << 2 * 8
+                    | color_data_red << 3 * 8
             );
         }
 
