@@ -94,6 +94,11 @@ void ChiselServer::SetupColorFrustumPublisher(const std::string &frustumTopic)
 {
     // colorCamera.frustumPublisher = nh.advertise<visualization_msgs::Marker>(frustumTopic, 1);
 }
+void ChiselServer::SetupLocalChunksPublisher(const std::string &local_chunks_topic)
+{
+    localChunksTopic = local_chunks_topic;
+    localChunksPublisher = nh.advertise<chisel_msgs::ChunkListMessage>(localChunksTopic, 1);
+}
 
 void ChiselServer::setPinholeCameraType(
     const float fx, const float fy,
@@ -209,6 +214,45 @@ void ChiselServer::PublishColorPose()
     // pose.pose.orientation.w = quat.w();
 
     // colorCamera.lastPosePublisher.publish(pose);
+}
+
+void ChiselServer::PublishLocalChunks()
+{
+    const chisel::ChunkManager &chunkManager = chiselMap->GetChunkManager();
+
+    chisel_msgs::ChunkListMessage local_chunks;
+
+    local_chunks.chunks.resize(localChunksSize_x*localChunksSize_y*localChunksSize_z);
+    chisel::Transform lastPose = depthCamera.lastPose;
+    Eigen::Vector3f local_origin = lastPose.translation();
+    Eigen::Vector3i origin_id = chunkManager.GetIDAt(local_origin);
+
+    size_t count=0;
+    for (int i = 0; i < localChunksSize_x;i++) {
+        for (int j = 0; j < localChunksSize_y; j++) {
+            for (int k = 0; k < localChunksSize_z; k++) {
+                chisel_msgs::ChunkMessage &msg = local_chunks.chunks.at(count);
+                chisel::ChunkPtr tmp;
+                bool has_chunks(true);
+                try {
+                    tmp = chunkManager.GetChunk(origin_id(0) + i - localChunksSize_x / 2,
+                                                origin_id(1) + j - localChunksSize_y / 2,
+                                                origin_id(2) + k - localChunksSize_z / 2);
+                }
+                catch(std::out_of_range  &exc)
+                {
+                    has_chunks=false;
+                }
+                if(has_chunks)
+                {
+                    chisel_ros::FillChunkMessage(tmp, &msg);
+                }
+                count++;
+            }
+        }
+    }
+    local_chunks.header.stamp = ros::Time::now();
+    localChunksPublisher.publish(local_chunks);
 }
 
 ChiselServer::ChiselServer(const ros::NodeHandle &nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode)
@@ -377,6 +421,7 @@ void ChiselServer::DepthImageCallback(sensor_msgs::ImageConstPtr depthImage)
         {
             auto start = std::chrono::system_clock::now();
             PublishMeshes();
+            PublishLocalChunks();
             std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - start;
             ROS_INFO("CHISEL: Done with publish, %f ms", elapsed.count() * 1000);
         }
@@ -392,7 +437,6 @@ void ChiselServer::DepthImageCallback(sensor_msgs::ImageConstPtr depthImage)
                 PublishColorFrustum();
             }
         }
-        puts("");
     }
 }
 

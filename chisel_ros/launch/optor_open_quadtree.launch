@@ -22,7 +22,7 @@
 	 <!-- camera type, Pinhole or Fisheye-->
         <param name="camera_type" value= "Pinhole"/>
         <!-- basic information for images-->
-        <param name="image_height" value="376"/>
+        <param name="image_width" value="376"/>
         <param name="image_height" value="240"/>
         <!-- Pinhole Parameter, if not pinhole can be ignored-->
         <param name="fx" value="233.36402893066406" />

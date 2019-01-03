@@ -37,6 +37,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "Chisel");
     ros::NodeHandle nh("~");
     int chunkSizeX, chunkSizeY, chunkSizeZ;
+    int localchunksetSizeX, localchunksetSizeY, localchunksetSizeZ;
     double voxelResolution;
     double truncationDistScale;
     int weight;
@@ -54,6 +55,8 @@ int main(int argc, char **argv)
     std::string baseTransform;
     std::string meshTopic;
     std::string chunkBoxTopic;
+    std::string localChunksTopic;
+
     double nearPlaneDist;
     double farPlaneDist;
     chisel_ros::ChiselServer::FusionMode mode;
@@ -66,6 +69,9 @@ int main(int argc, char **argv)
     nh.param("chunk_size_x", chunkSizeX, 32);
     nh.param("chunk_size_y", chunkSizeY, 32);
     nh.param("chunk_size_z", chunkSizeZ, 32);
+    nh.param("localchunkset_size_x", localchunksetSizeX, 5);
+    nh.param("localchunkset_size_y", localchunksetSizeY, 5);
+    nh.param("localchunkset_size_z", localchunksetSizeZ, 5);
     nh.param("truncation_scale", truncationDistScale, 8.0);
     nh.param("integration_weight", weight, 1);
     nh.param("use_voxel_carving", useCarving, true);
@@ -85,6 +91,7 @@ int main(int argc, char **argv)
     // nh.param("base_transform", baseTransform, std::string("/camera_link"));
     nh.param("mesh_topic", meshTopic, std::string("full_mesh"));
     nh.param("chunk_box_topic", chunkBoxTopic, std::string("chunk_boxes"));
+    nh.param("local_chunks_topic", localChunksTopic, std::string("local_chunks"));
     nh.param("fusion_mode", modeString, std::string("DepthImage"));
     nh.param("camera_type", cameraString, std::string("Pinhole"));
     nh.param("Odometry_topic", odometryTopic_name, std::string("/Odometry"));
@@ -125,7 +132,7 @@ int main(int argc, char **argv)
 
     server->SetNearPlaneDist(nearPlaneDist);
     server->SetFarPlaneDist(farPlaneDist);
-
+    server->SetLocalChunksSetSize(localchunksetSizeX, localchunksetSizeY, localchunksetSizeZ);
     if (mode == chisel_ros::ChiselServer::FusionMode::PointCloud)
     {
         // server->Subscribe_pointcloud_All(pointCloudTopic, odometryTopic_name, pointcloud_transformed);
@@ -183,6 +190,8 @@ int main(int argc, char **argv)
     server->SetBaseTransform(baseTransform);
     server->SetupMeshPublisher(meshTopic);
     server->SetupChunkBoxPublisher(chunkBoxTopic);
+    server->SetupLocalChunksPublisher(localChunksTopic);
+
     ROS_INFO("Beginning to loop.");
 
     ros::spin();

@@ -1,5 +1,7 @@
 Header header
 
+bool defined
+
 #Chunk ID spatial position
 int32 ID_x
 int32 ID_y

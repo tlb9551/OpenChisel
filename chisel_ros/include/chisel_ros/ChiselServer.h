@@ -134,6 +134,7 @@ class ChiselServer
     void SetupColorPosePublisher(const std::string &colorPoseTopic);
     void SetupDepthFrustumPublisher(const std::string &frustumTopic);
     void SetupColorFrustumPublisher(const std::string &frustumTopic);
+    void SetupLocalChunksPublisher(const std::string &localChunksTopic);
 
     void PublishMeshes();
     void PublishChunkBoxes();
@@ -142,6 +143,7 @@ class ChiselServer
     void PublishColorPose();
     void PublishDepthFrustum();
     void PublishColorFrustum();
+    void PublishLocalChunks();
 
     void SubscribeDepthImage(const std::string &depthImageTopic, const std::string &cameraInfoTopic, const std::string &transform);
     void DepthCameraInfoCallback(sensor_msgs::CameraInfoConstPtr cameraInfo);
@@ -198,7 +200,12 @@ class ChiselServer
     {
         farPlaneDist = dist;
     }
-
+    inline void SetLocalChunksSetSize(int size_x,int size_y,int size_z)
+    {
+        localChunksSize_x=size_x;
+        localChunksSize_y=size_y;
+        localChunksSize_z=size_z;
+    }
     bool Reset(chisel_msgs::ResetService::Request &request, chisel_msgs::ResetService::Response &response);
     bool TogglePaused(chisel_msgs::PauseService::Request &request, chisel_msgs::PauseService::Response &response);
     bool SaveMesh(chisel_msgs::SaveMeshService::Request &request, chisel_msgs::SaveMeshService::Response &response);
@@ -263,9 +270,12 @@ class ChiselServer
     std::string baseTransform;
     std::string meshTopic;
     std::string chunkBoxTopic;
+    std::string localChunksTopic;
+
     ros::Publisher meshPublisher;
     ros::Publisher chunkBoxPublisher;
     ros::Publisher latestChunkPublisher;
+    ros::Publisher localChunksPublisher;
     ros::ServiceServer resetServer;
     ros::ServiceServer pauseServer;
     ros::ServiceServer saveMeshServer;
@@ -282,6 +292,9 @@ class ChiselServer
     bool hasNewData;
     float nearPlaneDist;
     float farPlaneDist;
+    int localChunksSize_x;
+    int localChunksSize_y;
+    int localChunksSize_z;
     bool isPaused;
     bool pointcloud_transformed;
     FusionMode mode;

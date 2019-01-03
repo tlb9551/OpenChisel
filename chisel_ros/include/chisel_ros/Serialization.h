@@ -28,12 +28,12 @@
 
 namespace chisel_ros
 {
-    void FillChunkMessage(chisel::ChunkConstPtr chunk, chisel_msgs::ChunkMessage* message)
+    void FillChunkMessage(chisel::ChunkPtr chunk, chisel_msgs::ChunkMessage* message)
     {
         chisel::ChunkHasher hasher;
         assert(message != nullptr);
         message->header.stamp = ros::Time::now();
-
+        message->defined=true;
         chisel::ChunkID id = chunk->GetID();
         message->ID_x = id.x();
         message->ID_y = id.y();
