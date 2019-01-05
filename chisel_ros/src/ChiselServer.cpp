@@ -226,6 +226,9 @@ void ChiselServer::PublishLocalChunks()
     chisel::Transform lastPose = depthCamera.lastPose;
     Eigen::Vector3f local_origin = lastPose.translation();
     Eigen::Vector3i origin_id = chunkManager.GetIDAt(local_origin);
+    local_chunks.localchunks_origin.position.x=((origin_id(0)- localChunksSize_x / 2)-0.5)*chunkManager.GetChunkSize()(0)*chunkManager.GetResolution();
+    local_chunks.localchunks_origin.position.y=((origin_id(1)- localChunksSize_y / 2)-0.5)*chunkManager.GetChunkSize()(0)*chunkManager.GetResolution();
+    local_chunks.localchunks_origin.position.z=((origin_id(2)- localChunksSize_z / 2)-0.5)*chunkManager.GetChunkSize()(0)*chunkManager.GetResolution();
 
     size_t count=0;
     for (int i = 0; i < localChunksSize_x;i++) {

@@ -25,10 +25,10 @@
         <param name="image_width" value="376"/>
         <param name="image_height" value="240"/>
         <!-- Pinhole Parameter, if not pinhole can be ignored-->
-        <param name="fx" value="233.36402893066406" />
-        <param name="fy" value="234.3404998779297" />
-        <param name="cx" value="183.89654541015625" />
-        <param name="cy" value="117.12726593017578" />
+        <param name="fx" value="172.194081783902" />
+        <param name="fy" value="173.826907445785" />
+        <param name="cx" value="184.506800407586" />
+        <param name="cy" value="117.060384824099" />
         <!-- Fisheye Parameter, steps a degree, if not can be ignored-->
         <!-- <param name="degree_step" value="4"/> -->
 
